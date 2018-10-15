@@ -1,8 +1,12 @@
-import naoqi_proxy_python_classes
 from configuration import PepperConfiguration
 from pynaoqi_mate import Robot
 
+from WaitingAnimation import WaitingAnimation
+
 if __name__ == '__main__':
-    config = PepperConfiguration("Porter")
-    #config = PepperConfiguration("", "localhost", 55830)
+    config = PepperConfiguration("Amber")
+    #config = PepperConfiguration("", "localhost", 53101)
     robot = Robot(config)
+
+    waitingAnimation = WaitingAnimation(robot)
+    waitingAnimation.start(robot, 10)
