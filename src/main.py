@@ -14,5 +14,5 @@ if __name__ == '__main__':
     faceRec = FaceRecognition(robot)
     faceRec.run()
 
-    waitingAnimation = WaitingAnimation(robot)
-    waitingAnimation.start(robot, 10)
+    # waitingAnimation = WaitingAnimation(robot)
+    # waitingAnimation.start(robot, 10)

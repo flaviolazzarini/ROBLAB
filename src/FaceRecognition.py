@@ -2,6 +2,7 @@ import sys
 
 from naoqi import ALBroker, ALModule
 import time
+from WaitingAnimation import WaitingAnimation
 
 class FaceRecognition(ALModule):
 
@@ -10,9 +11,11 @@ class FaceRecognition(ALModule):
         Initialisation of qi framework and event detection.
         """
         super(FaceRecognition, self)
+        self.robot = robot;
         session = robot.session
         # Get the service ALMemory.
         self.memory = session.service("ALMemory")
+
         # Connect the event callback.
         self.subscriber = self.memory.subscriber("FaceDetected")
         self.subscriber.signal.connect(self.on_human_tracked)
@@ -20,36 +23,88 @@ class FaceRecognition(ALModule):
         self.tts = session.service("ALTextToSpeech")
         self.face_detection = session.service("ALFaceDetection")
         self.face_detection.subscribe("FaceRecognition")
-        self.got_face = False
+        self.face_detection.setRecognitionConfidenceThreshold(0.3)
+        self.speech_recognition = session.service("ALSpeechRecognition")
+
+        # If the speech recognition subscriber still keeps reacting
+        # for subscriber, period, prec in self.speech_recognition.getSubscribersInfo():
+        #     self.speech_recognition.unsubscribe(subscriber)
+
+        self.speech_recognition.setLanguage("English")
+        voci = ["yes", "no"]
+        self.speech_recognition.setVocabulary(voci, False)
+        self.subscriberSpeech = self.memory.subscriber("WordRecognized")
+        self.subscriberSpeech.signal.connect(self.on_word_recognized)
+        self.play = None
+
+    def on_word_recognized(self, value):
+        print value
+        if value[0] == "yes":
+            self.play = True
+        else:
+            if not self.play or self.play is None:
+                self.play = False
+
+        self.speech_recognition.unsubscribe("LetsPlay")
+        self.subscriberSpeech = None
 
     def on_human_tracked(self, value):
         """
         Callback for event FaceDetected.
         """
-        if value == []:  # empty value when the face disappears
-            self.got_face = False
-        elif not self.got_face:  # only speak the first time a face appears
-            self.got_face = True
-            print "I saw a face!"
-            self.tts.say("Hello, you!")
-            # First Field = TimeStamp.
-            timeStamp = value[0]
-            print "TimeStamp is: " + str(timeStamp)
 
-            # Second Field = array of face_Info's.
-            faceInfoArray = value[1]
-            for j in range(len(faceInfoArray) - 1):
-                faceInfo = faceInfoArray[j]
+        # Unsubscribe from to prevent multiple triggers
+        self.subscriber = None
+        self.face_detection.unsubscribe("FaceRecognition")
 
-                # First Field = Shape info.
-                faceShapeInfo = faceInfo[0]
+        if not self.play or self.play is None:
+            if value == []:  # empty value when the face disappears
+                print "No face detected"
+            else:
+                print "I saw a face!"
+                self.tts.say("Hello, do you wan't to play?")
+                self.speech_recognition.subscribe("LetsPlay")
+                while self.play is None:
+                    time.sleep(2)
 
-                # Second Field = Extra info (empty for now).
-                faceExtraInfo = faceInfo[1]
+                if self.play:
+                    # First Field = TimeStamp.
+                    timeStamp = value[0]
+                    print "TimeStamp is: " + str(timeStamp)
 
-                print "Face Infos :  alpha %.3f - beta %.3f" % (faceShapeInfo[1], faceShapeInfo[2])
-                print "Face Infos :  width %.3f - height %.3f" % (faceShapeInfo[3], faceShapeInfo[4])
-                print "Face Extra Infos :" + str(faceExtraInfo)
+                    # Second Field = array of face_Info's.
+                    faceInfoArray = value[1]
+
+                    for j in range(len(faceInfoArray) - 1):
+                        faceInfo = faceInfoArray[j]
+
+                        # First Field = Shape info.
+                        faceShapeInfo = faceInfo[0]
+
+                        # Second Field = Extra info (empty for now).
+                        faceExtraInfo = faceInfo[1]
+
+                        if faceExtraInfo[2] == "":
+                            self.tts.say("I don't know you yet, what is your name?")
+                            # TODO: Listen to person
+                            name = "Flavio"
+                            success = self.face_detection.learnFace(name)
+                            print success
+                        else:
+                            print faceExtraInfo[2]
+                            self.tts.say("Hello " + faceExtraInfo[2] + ". Let's play!")
+                            animation = WaitingAnimation()
+                            animation.start(self.robot, 10)
+
+                        print "Face Infos :  alpha %.3f - beta %.3f" % (faceShapeInfo[1], faceShapeInfo[2])
+                        print "Face Infos :  width %.3f - height %.3f" % (faceShapeInfo[3], faceShapeInfo[4])
+                        print "Face Extra Infos :" + str(faceExtraInfo)
+                else:
+                    self.tts.say("Ok, we will play next time")
+
+        self.subscriber = self.memory.subscriber("FaceDetected")
+        self.subscriber.signal.connect(self.on_human_tracked)
+        self.face_detection.subscribe("FaceRecognition")
 
     def run(self):
         """

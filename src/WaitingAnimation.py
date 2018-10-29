@@ -4,21 +4,17 @@ import qi
 from naoqi import ALModule
 
 
-class WaitingAnimation(ALModule):
-    def __init__(self, robot):
-        super(WaitingAnimation, self)
-        session = robot.session
-        self.tts = session.service("ALTextToSpeech")
+class WaitingAnimation():
 
     def start(self, robot, timeout):
         qi.async(self.move_hands, robot)
-        self.count_to_zero_from(timeout)
+        self.count_to_zero_from(timeout, robot)
 
-    def count_to_zero_from(self, timeout):
+    def count_to_zero_from(self, timeout, robot):
         for x in range(0, timeout, 1):
-            self.tts.say(str(timeout - x))
+            robot.ALTextToSpeech.say(str(timeout - x))
             sleep(.2)
-        self.tts.say('ready or not, here I come');
+        robot.ALTextToSpeech.say('ready or not, here I come')
 
     @staticmethod
     def move_hands(robot):
