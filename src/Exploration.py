@@ -43,7 +43,7 @@ class Exploration:
 
         position = self.get_current_position()
 
-        return [width_offset + position[0], height_offset + position[1]]
+        return [int(width_offset + position[0]), int(height_offset + position[1])]
 
     def get_current_position(self):
         pose = self.navigation.getRobotPositionInMap()
