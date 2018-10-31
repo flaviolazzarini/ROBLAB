@@ -1,22 +1,20 @@
 from pynaoqi_mate import Robot
 from configuration import PepperConfiguration
 from naoqi import ALModule
-from time import sleep
-
 
 class ObstacleAvoidance(ALModule):
 
-    def __init__(self, myrobot):
-        super(ObstacleAvoidance, self)
+    def __init__(self, pepper):
+        session = pepper.session
+        self.motion = session.service("ALMotion")
+        self.posture = session.service("ALRobotPosture")
+        self.setExternalCollisionProtection()
 
-        myrobot.ALMotion.setExternalCollisionProtectionEnabled("Move", True)
-        myrobot.ALMotion.moveTo(5.0, 5.0, 10)
+    def setExternalCollisionProtection(self):
+        self.motion.setExternalCollisionProtectionEnabled("All", True)
 
-
-if __name__ == "__main__":
-
-    #config = PepperConfiguration("Amber")
-    config = PepperConfiguration("", "localhost", 52038)
-    robot = Robot(config)
-
-    obstacleAvoidance = ObstacleAvoidance(robot)
+    def moveTo(self, distance, theta):
+        self.motion.moveTo(distance, 0, theta)
+        if self.posture.getPostureFamily() == "Standing":
+            self.motion.moveTo(-.1, 0, 0)
+            self.motion.moveTo(0, 0, -0.4)
