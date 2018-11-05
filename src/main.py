@@ -4,15 +4,18 @@ from configuration import PepperConfiguration
 from pynaoqi_mate import Robot
 
 from WaitingAnimation import WaitingAnimation
-
 from FaceRecognition import FaceRecognition
+from obstacleAvoidance import ObstacleAvoidance
 
 if __name__ == '__main__':
-    config = PepperConfiguration("Porter")
+    config = PepperConfiguration("Amber")
     #config = PepperConfiguration("", "localhost", 53101)
     robot = Robot(config)
+    # obstacleAvoidance = ObstacleAvoidance(robot);
+    # obstacleAvoidance.moveTo(5.0, 0.5)
     faceRec = FaceRecognition(robot)
     faceRec.run()
+
 
     # waitingAnimation = WaitingAnimation(robot)
     # waitingAnimation.start(robot, 10)
