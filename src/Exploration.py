@@ -21,7 +21,9 @@ class Exploration:
         return path
 
     def move_to_in_map(self, position):
-        self.navigation.navigateToInMap(position)
+        errorcode = self.navigation.navigateToInMap(position)
+        if(errorcode != 0):
+            raise EnvironmentError("could not navigate to position " + position)
 
     def move_to_origin(self):
         self.move_to_in_map([0., 0., 0.])
@@ -35,6 +37,7 @@ class Exploration:
 
     def get_current_pixel(self):
         result_map = self.navigation.getMetricalMap()
+        map_meters_per_pixel = result_map[0]
         map_width = result_map[1]
         map_height = result_map[2]
 
@@ -43,7 +46,9 @@ class Exploration:
 
         position = self.get_current_position()
 
-        return [int(width_offset + position[0]), int(height_offset + position[1])]
+        x_offset_in_pixels = (position[0] / map_meters_per_pixel)
+        y_offset_in_pixels = (position[1] / map_meters_per_pixel)
+        return [int(width_offset + x_offset_in_pixels), int(height_offset + y_offset_in_pixels)]
 
     def get_current_position(self):
         pose = self.navigation.getRobotPositionInMap()
