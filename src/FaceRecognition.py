@@ -3,6 +3,7 @@ import sys
 from naoqi import ALBroker, ALModule
 import time
 from WaitingAnimation import WaitingAnimation
+from PepperTabletDialogHandler import PepperTabletDialogHandler
 
 class FaceRecognition(ALModule):
 
@@ -26,7 +27,7 @@ class FaceRecognition(ALModule):
         self.face_detection.setRecognitionConfidenceThreshold(0.3)
         self.speech_recognition = session.service("ALSpeechRecognition")
 
-        # If the speech recognition subscriber still keeps reacting
+        #If the speech recognition subscriber still keeps reacting
         # for subscriber, period, prec in self.speech_recognition.getSubscribersInfo():
         #     self.speech_recognition.unsubscribe(subscriber)
 
@@ -86,8 +87,11 @@ class FaceRecognition(ALModule):
 
                         if faceExtraInfo[2] == "":
                             self.tts.say("I don't know you yet, what is your name?")
-                            # TODO: Listen to person
-                            name = "Flavio"
+                            tablet = PepperTabletDialogHandler(self.robot)
+                            name = tablet.show_input_text_dialog_blocking("What's your name?");
+                            if name is None:
+                                print(name)
+                             #name = "Flavio"
                             success = self.face_detection.learnFace(name)
                             print success
                         else:
