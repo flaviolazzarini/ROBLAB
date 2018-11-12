@@ -29,6 +29,11 @@ def goto_hot_spots(exploration, learn_layer):
         # absolute variant
         exploration.move_to_in_map([col, row])
 
+        found = False
+        # Check for faces
+        if not found:
+            clear_hot_spot(col, row, learn_layer)
+
         # relative variant
         # position = exploration.get_current_pixel()
         # meters_per_pixel = exploration.get_current_map_meters_per_pixel()
