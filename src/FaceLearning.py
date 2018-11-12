@@ -26,17 +26,16 @@ class FaceLearning(object):
 
     def __learn_face_logic(self, name):
         try:
+            self._name = name
             self.subscribe()
             self._app.run()
-            self._name = name
         except Exception, e:
             print "Error: ", e
 
         return self.__get_result_and_reset()
 
     def __get_result_and_reset(self):
-
-        return self._knownFace, self._name
+        return self._success
 
     def on_human_tracked(self, value):
         """
