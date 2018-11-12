@@ -1,3 +1,4 @@
+# need to install futures for python 2.7
 import concurrent.futures
 
 
@@ -54,16 +55,16 @@ class PepperTabletDialogHandler(object):
 
         Returns:
         :rtype: concurrent.futures.Future
-        :return: Futur-Object for the given Task
+        :return: Future-Object for the given Task
         """
 
-        future = self._executor.submit(self.__callback_on_input_text, text_dialog,
-                                          ok_button_text, cancel_button_text)
+        future = self._executor.submit(self.__show_input_text_dialog_logic, text_dialog,
+                                       ok_button_text, cancel_button_text)
         return future
 
     def __callback_on_input_text(self, button_id, input_text):
         if button_id == 1:
-            self._result(input_text)
+            self._result = input_text
 
         self._app.stop()
 

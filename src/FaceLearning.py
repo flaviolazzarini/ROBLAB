@@ -1,12 +1,7 @@
-import sys
-
-from naoqi import ALBroker, ALModule
-import time
-import concurrent.futures
+import concurrent
 
 
-class FaceRecognition(object):
-
+class FaceLearning(object):
     def __init__(self, robot):
         """
         Initialisation of qi framework and event detection.
@@ -16,26 +11,24 @@ class FaceRecognition(object):
         self._app = robot.app
         self.memory = self.session.service("ALMemory")
         self.subscriber = None
+        self._success = None
         self.face_detection = None
-        self._knownFace = None
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self._name = None
 
-    def deleteExtractor(self):
-        self._executor = None
-
-    def search_face_blocking(self, timeout=None):
-        future = self.search_face_concurrently()
+    def learn_face_blocking(self, name, timeout=None):
+        future = self.learn_face_concurrently(name)
         return future.result(timeout)
 
-    def search_face_concurrently(self):
-        future = self._executor.submit(self.__search_face_logic)
+    def learn_face_concurrently(self, name):
+        future = self._executor.submit(self.__learn_face_logic, name)
         return future
 
-    def __search_face_logic(self):
+    def __learn_face_logic(self, name):
         try:
             self.subscribe()
             self._app.run()
+            self._name = name
         except Exception, e:
             print "Error: ", e
 
@@ -54,25 +47,7 @@ class FaceRecognition(object):
         self.unsubscribe()
 
         if value != []:  # empty value when the face disappears
-
-            # Second Field = array of face_Info's.
-            faceInfoArray = value[1]
-
-            for j in range(len(faceInfoArray) - 1):
-                faceInfo = faceInfoArray[j]
-
-                # First Field = Shape info.
-                faceShapeInfo = faceInfo[0]
-
-                # Second Field = Extra info (empty for now).
-                faceExtraInfo = faceInfo[1]
-
-                if faceExtraInfo[2] == "":
-                    self._knownFace = False
-
-                else:
-                    self._knownFace = True
-                    self._name = faceExtraInfo[2]
+            self._success = self.face_detection.learnFace(self._name)
 
         else:
             self.subscribe()

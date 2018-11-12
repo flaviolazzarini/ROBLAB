@@ -6,13 +6,11 @@ from pynaoqi_mate import Robot
 from WaitingAnimation import WaitingAnimation
 
 from FaceRecognition import FaceRecognition
+from HideNSeek import HideNSeek
 
 if __name__ == '__main__':
-    config = PepperConfiguration("Amber")
+    config = PepperConfiguration("Porter")
     #config = PepperConfiguration("", "localhost", 53101)
     robot = Robot(config)
-    faceRec = FaceRecognition(robot)
-    faceRec.run()
-
-    # waitingAnimation = WaitingAnimation(robot)
-    # waitingAnimation.start(robot, 10)
+    hideNseek = HideNSeek(robot)
+    hideNseek.run()
