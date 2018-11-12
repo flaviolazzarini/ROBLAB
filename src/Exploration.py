@@ -1,6 +1,8 @@
 import numpy
-from PIL import Image
 import array as arr
+
+from MapHelper import array_to_bw_bitmap
+
 
 class Exploration:
     def __init__(self, robot):
@@ -60,9 +62,7 @@ class Exploration:
         map_height = result_map[2]
         img = numpy.array(result_map[4]).reshape(map_width, map_height)
         img = (100 - img) * 2.55  # from 0..100 to 255..0
-        img = numpy.array(img, numpy.uint8)
-        result = Image.frombuffer('L', (map_width, map_height), img, 'raw', 'L', 0, 1)
-        result.save(path)
+        array_to_bw_bitmap(img, path)
 
     def get_current_map(self):
         result_map = self.navigation.getMetricalMap()
