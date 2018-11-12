@@ -6,6 +6,7 @@ class Exploration:
     def __init__(self, robot):
         session = robot.session
         self.navigation = session.service("ALNavigation")
+        self.navigation.startLocalization()
 
     def explore(self, radius):
         error_code = self.navigation.explore(radius)
@@ -32,13 +33,6 @@ class Exploration:
 
     def move_to_origin(self):
         self.move_to_in_map([0., 0., 0.])
-
-    def get_current_map_as_array(self):
-        result_map = self.navigation.getMetricalMap()
-        map_width = result_map[1]
-        map_height = result_map[2]
-        img = numpy.array(result_map[4]).reshape(map_width, map_height)
-        return img
 
     def get_current_pixel(self):
         result_map = self.navigation.getMetricalMap()
@@ -70,6 +64,16 @@ class Exploration:
         result = Image.frombuffer('L', (map_width, map_height), img, 'raw', 'L', 0, 1)
         result.save(path)
 
+    def get_current_map(self):
+        result_map = self.navigation.getMetricalMap()
+        map_width = result_map[1]
+        map_height = result_map[2]
+        map = numpy.array(result_map[4]).reshape(map_width, map_height)
+        return map
+
+    def get_current_map_meters_per_pixel(self):
+        return self.navigation.getMetricalMap()[0]
+
     def load_map(self, path):
         self.navigation.stopLocalization()
         self.navigation.stopExploration()
@@ -77,3 +81,6 @@ class Exploration:
         guess = [0., 0.] # assuming the robot is not far from the place where he started the loaded exploration.
         self.navigation.relocalizeInMap(guess)
         self.navigation.startLocalization()
+
+    def relocate_in_map(self, guess):
+        self.navigation.relocalizeInMap(guess)
