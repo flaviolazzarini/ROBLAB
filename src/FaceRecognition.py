@@ -1,62 +1,121 @@
+import sys
+
 from naoqi import ALBroker, ALModule
 import time
+from WaitingAnimation import WaitingAnimation
 
-class PepperFaceRecognition(ALModule):
-    # naoqi sessions
-    tts = None
-    memory = None
-    subscriber = None
-    video_service = None
+class FaceRecognition(ALModule):
 
-    # search options
-    scanning = False
-    searched_person = None
-    adding_person = False
-
-    isalreadydetecting = False
-
-    def __init__(self, name, session):
-        ALModule.__init__(self, name)
-        self.session = session
-        self.tts = session.service("ALTextToSpeech")
-        self.face_recon = session.service("ALFaceDetection")
-        self.video_service = session.service("ALVideoDevice")
-        self.tablet = session.service("ALTabletService")
-
+    def __init__(self, robot):
+        """
+        Initialisation of qi framework and event detection.
+        """
+        super(FaceRecognition, self)
+        self.robot = robot;
+        session = robot.session
+        # Get the service ALMemory.
         self.memory = session.service("ALMemory")
+
+        # Connect the event callback.
         self.subscriber = self.memory.subscriber("FaceDetected")
-        self.face_recon.subscribe(name)
-        isalreadydetecting = 0
-        self.subscriber.signal.connect(self.faceCallback)
+        self.subscriber.signal.connect(self.on_human_tracked)
+        # Get the services ALTextToSpeech and ALFaceDetection.
+        self.tts = session.service("ALTextToSpeech")
+        self.face_detection = session.service("ALFaceDetection")
+        self.face_detection.subscribe("FaceRecognition")
+        self.face_detection.setRecognitionConfidenceThreshold(0.3)
+        self.speech_recognition = session.service("ALSpeechRecognition")
 
-    def faceCallback(self, *_args):
-        """Callback method for faceDetected"""
+        # If the speech recognition subscriber still keeps reacting
+        # for subscriber, period, prec in self.speech_recognition.getSubscribersInfo():
+        #     self.speech_recognition.unsubscribe(subscriber)
 
-        if not self.isalreadydetecting:
-            self.isalreadydetecting = True
-            self.tts.say('hello, im taking a picture')
-            time.sleep(1)
-            self.tts.say("Snap")
-            responsedetect = afa.detectFaceBinary(picture_path[0])
+        self.speech_recognition.setLanguage("English")
+        voci = ["yes", "no"]
+        self.speech_recognition.setVocabulary(voci, False)
+        self.subscriberSpeech = self.memory.subscriber("WordRecognized")
+        self.subscriberSpeech.signal.connect(self.on_word_recognized)
+        self.play = None
 
-            if (responsedetect == "fehler keine person erkannt"):
-                self.tts.say('Sorry i could not recognize a face')
-                time.sleep(2)
-                self.isalreadydetecting = False  # TODO change with google
+    def on_word_recognized(self, value):
+        print value
+        if value[0] == "yes":
+            self.play = True
+        else:
+            if not self.play or self.play is None:
+                self.play = False
 
-            responseidentify = afa.identifyFace(responsedetect)
+        self.speech_recognition.unsubscribe("LetsPlay")
+        self.subscriberSpeech = None
 
-            if (responseidentify == "person nicht bekannt"):
-                self.tts.say("I dont know you yet. Do you want to tell me your name?")
-                self.newPerson()
+    def on_human_tracked(self, value):
+        """
+        Callback for event FaceDetected.
+        """
+
+        # Unsubscribe from to prevent multiple triggers
+        self.subscriber = None
+        self.face_detection.unsubscribe("FaceRecognition")
+
+        if not self.play or self.play is None:
+            if value == []:  # empty value when the face disappears
+                print "No face detected"
             else:
-                self.tts.say("I'm looking for your name")
-                personName = afa.getPerson(responseidentify)
-                self.tts.say("hello" + personName);
-                self.tts.say("Have a nice day " + personName)
+                print "I saw a face!"
+                self.tts.say("Hello, do you wan't to play?")
+                self.speech_recognition.subscribe("LetsPlay")
+                while self.play is None:
+                    time.sleep(2)
 
-                time.sleep(2)
-                self.isalreadydetecting = False  # TODO change with google
+                if self.play:
+                    # First Field = TimeStamp.
+                    timeStamp = value[0]
+                    print "TimeStamp is: " + str(timeStamp)
 
-            time.sleep(5)
+                    # Second Field = array of face_Info's.
+                    faceInfoArray = value[1]
 
+                    for j in range(len(faceInfoArray) - 1):
+                        faceInfo = faceInfoArray[j]
+
+                        # First Field = Shape info.
+                        faceShapeInfo = faceInfo[0]
+
+                        # Second Field = Extra info (empty for now).
+                        faceExtraInfo = faceInfo[1]
+
+                        if faceExtraInfo[2] == "":
+                            self.tts.say("I don't know you yet, what is your name?")
+                            # TODO: Listen to person
+                            name = "Flavio"
+                            success = self.face_detection.learnFace(name)
+                            print success
+                        else:
+                            print faceExtraInfo[2]
+                            self.tts.say("Hello " + faceExtraInfo[2] + ". Let's play!")
+                            animation = WaitingAnimation()
+                            animation.start(self.robot, 10)
+
+                        print "Face Infos :  alpha %.3f - beta %.3f" % (faceShapeInfo[1], faceShapeInfo[2])
+                        print "Face Infos :  width %.3f - height %.3f" % (faceShapeInfo[3], faceShapeInfo[4])
+                        print "Face Extra Infos :" + str(faceExtraInfo)
+                else:
+                    self.tts.say("Ok, we will play next time")
+
+        self.subscriber = self.memory.subscriber("FaceDetected")
+        self.subscriber.signal.connect(self.on_human_tracked)
+        self.face_detection.subscribe("FaceRecognition")
+
+    def run(self):
+        """
+        Loop on, wait for events until manual interruption.
+        """
+        print "Starting HumanGreeter"
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print "Interrupted by user, stopping HumanGreeter"
+            self.face_detection.unsubscribe("HumanGreeter")
+            # stop
+            sys.exit(0)
