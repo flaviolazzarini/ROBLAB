@@ -25,6 +25,11 @@ class Exploration:
         if(errorcode != 0):
             raise EnvironmentError("could not navigate to position " + position)
 
+    def navigate_to(self, x, y):
+        successfull = self.navigation.navigateTo(x, y)
+        if successfull == False:
+            raise EnvironmentError("could not navigate to position (" + str(x) + " / " + str(y) + ")")
+
     def move_to_origin(self):
         self.move_to_in_map([0., 0., 0.])
 
