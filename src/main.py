@@ -13,3 +13,6 @@ if __name__ == '__main__':
     robot = Robot(config)
     faceRec = FaceRecognition(robot)
     faceRec.run()
+
+    # waitingAnimation = WaitingAnimation(robot)
+    # waitingAnimation.start(robot, 10)
