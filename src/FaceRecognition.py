@@ -1,7 +1,5 @@
-import sys
 
-from naoqi import ALBroker, ALModule
-import time
+import qi
 import concurrent.futures
 
 
@@ -13,7 +11,9 @@ class FaceRecognition(object):
         """
         # Get the service ALMemory.
         self.session = robot.session
-        self._app = robot.app
+        self._app = qi.Application(["--qi-url=" + robot.connection_url])
+        self._app.start()
+        self._app.session.registerService("FaceRec", FaceRecognition())
         self.memory = self.session.service("ALMemory")
         self.subscriber = None
         self.face_detection = None
