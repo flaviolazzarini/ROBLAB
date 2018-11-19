@@ -1,6 +1,6 @@
 # need to install futures for python 2.7
 import concurrent.futures
-
+from time import sleep
 
 class PepperTabletDialogHandler(object):
     """
@@ -14,6 +14,7 @@ class PepperTabletDialogHandler(object):
         self._result = None
         self._signal_id = None
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self._input_received = False
 
     def show_input_text_dialog_blocking(self, text_dialog,
                                         ok_button_text="OK",
@@ -65,8 +66,9 @@ class PepperTabletDialogHandler(object):
     def __callback_on_input_text(self, button_id, input_text):
         if button_id == 1:
             self._result = input_text
+            self._input_received = True
 
-        self._app.stop()
+        #self._app.stop()
 
     def __show_input_text_dialog_logic(self, text_dialog, ok_button_text="OK", cancel_button_text="Cancel"):
         # type: (str, str, str) -> str
@@ -84,7 +86,9 @@ class PepperTabletDialogHandler(object):
             self._proxyALTabletService.showInputTextDialog(text_dialog, ok_button_text, cancel_button_text)
 
             self._signal_id = self._proxyALTabletService.onInputText.connect(self.__callback_on_input_text)
-            self._app.run()
+            while not self._input_received:
+                sleep(0)
+            #self._app.run()
 
             self._proxyALTabletService.onInputText.disconnect(self._signal_id)
         except Exception, e:

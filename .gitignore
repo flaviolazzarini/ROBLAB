@@ -69,3 +69,5 @@ fabric.properties
 *.iml
 
 \.idea/misc\.xml
+
+\.idea/

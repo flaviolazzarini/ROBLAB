@@ -1,5 +1,6 @@
 
 import qi
+from time import sleep
 import concurrent.futures
 
 
@@ -11,15 +12,15 @@ class FaceRecognition(object):
         """
         # Get the service ALMemory.
         self.session = robot.session
-        self._app = qi.Application(["--qi-url=" + robot.connection_url])
-        self._app.start()
-        self._app.session.registerService("FaceRec", FaceRecognition())
+        #self._app.session.registerService("FaceRec", FaceRecognition())
         self.memory = self.session.service("ALMemory")
         self.subscriber = None
         self.face_detection = None
         self._knownFace = None
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self._name = None
+        self._person_seen = False
+
 
     def deleteExtractor(self):
         self._executor = None
@@ -35,7 +36,9 @@ class FaceRecognition(object):
     def __search_face_logic(self):
         try:
             self.subscribe()
-            self._app.run()
+            while not self._person_seen:
+                sleep(0)
+
         except Exception, e:
             print "Error: ", e
 
@@ -49,7 +52,7 @@ class FaceRecognition(object):
         """
         Callback for event FaceDetected.
         """
-
+        print "Hoi Matej"
         # Unsubscribe from to prevent multiple triggers
         self.unsubscribe()
 
@@ -73,11 +76,11 @@ class FaceRecognition(object):
                 else:
                     self._knownFace = True
                     self._name = faceExtraInfo[2]
-
+            self._person_seen = True
         else:
             self.subscribe()
 
-        self._app.stop()
+        #self._app.stop()
 
     def subscribe(self):
         self.subscriber = self.memory.subscriber("FaceDetected")
