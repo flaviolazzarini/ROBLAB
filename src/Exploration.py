@@ -8,7 +8,6 @@ class Exploration:
     def __init__(self, robot):
         session = robot.session
         self.navigation = session.service("ALNavigation")
-        self.navigation.startLocalization()
 
     def explore(self, radius):
         error_code = self.navigation.explore(radius)
@@ -36,7 +35,7 @@ class Exploration:
     def move_to_origin(self):
         self.move_to_in_map([0., 0., 0.])
 
-    def get_current_pixel(self):
+    def get_current_position_in_map_array(self):
         result_map = self.navigation.getMetricalMap()
         map_meters_per_pixel = result_map[0]
         map_width = result_map[1]
