@@ -1,41 +1,84 @@
+import math
 from itertools import product
 
+import qi
 import numpy as np
 import sys
 
 from ArrayDistributor import distribute_values
 
-COST_OF_SINGLE_MOVE = 20
+COST_OF_SINGLE_MOVE = 10
 
 
-def start_search(exploration, map_exploration, map_learn, current_x, current_y):
+def start_search(exploration, map_exploration, map_learn):
     # map = exploration_map.get_current_map()  # 0 = obstacle / 50 = not explored / 100 = free
-    map_obstacles = -1 * (100 - map_exploration)  # 0 = free / -50 = not explored / -100 = obstacle
+    map_obstacles = (-1 * (100 - map_exploration)) * 2  # 0 = free / -100 = not explored / -200 = obstacle
     map_movement = np.zeros_like(map_obstacles)
 
-    step_number = 0
+    position = exploration.get_current_position_in_map_array()
+    current_x = position[0]
+    current_y = position[1]
+
+    movement_future = None
+
     while max(map(max, map_movement + map_obstacles)) > -COST_OF_SINGLE_MOVE:
+        current_x, current_y = do_multiple_virtual_moves(
+            current_x,
+            current_y,
+            map_learn,
+            map_movement,
+            map_obstacles,
+            10)
+
+        position = exploration.get_current_position_in_map_array()
+        x_diff = current_x - position[0]
+        y_diff = current_y - position[1]
+
+        target_angle = math.atan(x_diff / y_diff)
+
+        if x_diff < 0 and y_diff < 0:
+            target_angle = math.pi - target_angle
+        if x_diff > 0 and y_diff < 0:
+            target_angle = -(math.pi - target_angle)
+
+        # exploration.move_to_in_map([current_x, current_y])
+        meters_per_pixel = exploration.get_meters_per_pixel()
+
+        if movement_future is not None:
+            movement_future.wait()
+
+        print('movement offset x=' + str(x_diff) + ' y=' + str(y_diff) + ' theta=' + str(target_angle))
+        print('')
+
+        movement_future = qi.async(
+            exploration.navigate_to,
+            math.fabs(x_diff * meters_per_pixel),
+            math.fabs(y_diff * meters_per_pixel),
+            -position[2] + target_angle,
+            delay=0)
+
+
+def do_multiple_virtual_moves(current_x, current_y, map_learn, map_movement, map_obstacles, max_step_number):
+    step_number = 0
+    while step_number < max_step_number:
         if map_learn[current_y][current_x] > 0:
             map_learn[current_y][current_x] = 0
-
         map_movement[current_y][current_x] = map_movement[current_y][current_x] - COST_OF_SINGLE_MOVE
 
-        map_learn_distributed = distribute_values(map_learn)
+        env_obstacles = neighbors_in_radius(6, current_y, current_x, map_obstacles)
+        env_learn = neighbors_in_radius(6, current_y, current_x, map_learn)
+        env_learn_distributed = distribute_values(env_learn)
+        env_movement = neighbors_in_radius(6, current_y, current_x, map_movement)
 
-        # env_obstacles = neighbors_in_radius(6, current_y, current_x, map_obstacles)
-        # env_learn = neighbors_in_radius(6, current_y, current_x, map_learn_distributed)
-        # env_movement = neighbors_in_radius(6, current_y, current_x, map_movement)
+        new_x, new_y = find_next_move(env_learn_distributed, env_obstacles, env_movement, 7, 7)
 
-        new_x, new_y = find_next_move(map_learn_distributed, map_obstacles, map_movement, current_x, current_y)
-
-        current_x = new_x
-        current_y = new_y
-
+        current_x = current_x + (new_x - 7)
+        current_y = current_y + (new_y - 7)
         print ('step ' + str(step_number))
         print ('moved to (' + str(current_x) + '|' + str(current_y) + ')')
         step_number = step_number + 1
 
-        # exploration.move_to_in_map([current_x, current_y])
+    return current_x, current_y
 
 
 def find_next_move(map_learn_distributed, map_obstacles, map_movement, current_x, current_y):

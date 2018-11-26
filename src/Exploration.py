@@ -25,12 +25,12 @@ class Exploration:
     def move_to_in_map(self, position):
         errorcode = self.navigation.navigateToInMap(position)
         if(errorcode != 0):
-            raise EnvironmentError("could not navigate to position " + position)
+            print("could not navigate to position " + position)
 
-    def navigate_to(self, x, y):
-        successfull = self.navigation.navigateTo(x, y)
+    def navigate_to(self, x, y, theta):
+        successfull = self.navigation.navigateTo(x, y, theta)
         if successfull == False:
-            raise EnvironmentError("could not navigate to position (" + str(x) + " / " + str(y) + ")")
+            print("could not navigate to position (" + str(x) + " / " + str(y) + ")")
 
     def move_to_origin(self):
         self.move_to_in_map([0., 0., 0.])
@@ -48,11 +48,13 @@ class Exploration:
 
         x_offset_in_pixels = (position[0] / map_meters_per_pixel)
         y_offset_in_pixels = (position[1] / map_meters_per_pixel)
-        return [int(width_offset + x_offset_in_pixels), int(height_offset + y_offset_in_pixels)]
+        theta = position[2]
+
+        return [int(width_offset + x_offset_in_pixels), int(height_offset + y_offset_in_pixels), theta]
 
     def get_current_position(self):
         pose = self.navigation.getRobotPositionInMap()
-        xy_position = arr.array('f', [pose[0][0], pose[0][1]])
+        xy_position = arr.array('f', [pose[0][0], pose[0][1], pose[0][2]])
         return xy_position
 
     def save_current_map_as_bw_image(self, path):
@@ -69,6 +71,10 @@ class Exploration:
         map_height = result_map[2]
         map = numpy.array(result_map[4]).reshape(map_width, map_height)
         return map
+
+    def get_meters_per_pixel(self):
+        result_map = self.navigation.getMetricalMap()
+        return result_map[0]
 
     def get_current_map_meters_per_pixel(self):
         return self.navigation.getMetricalMap()[0]
