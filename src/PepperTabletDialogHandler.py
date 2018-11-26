@@ -68,8 +68,6 @@ class PepperTabletDialogHandler(object):
             self._result = input_text
             self._input_received = True
 
-        #self._app.stop()
-
     def __show_input_text_dialog_logic(self, text_dialog, ok_button_text="OK", cancel_button_text="Cancel"):
         # type: (str, str, str) -> str
         """
@@ -88,7 +86,6 @@ class PepperTabletDialogHandler(object):
             self._signal_id = self._proxyALTabletService.onInputText.connect(self.__callback_on_input_text)
             while not self._input_received:
                 sleep(0)
-            #self._app.run()
 
             self._proxyALTabletService.onInputText.disconnect(self._signal_id)
         except Exception, e:

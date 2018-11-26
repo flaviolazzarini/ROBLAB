@@ -46,7 +46,6 @@ class VoiceRecognition:
 					print("callback")
 					self.callback_function(False)
 				elif args[0][0] == "Yes" and args[0][1] > 0.5:
-					print("callback")
 					self.callback_function(True)
 
 

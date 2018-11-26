@@ -31,7 +31,6 @@ class FaceLearning(object):
             self._name = name
             self.subscribe()
             self.face_detection.forgetPerson(self._name)
-            #self._app.run()
             while not self._face_learned:
                 sleep(0)
         except Exception, e:
@@ -52,12 +51,10 @@ class FaceLearning(object):
 
         if value != []:  # empty value when the face disappears
             self._success = self.face_detection.learnFace(self._name)
-            print("learning face")
 
         else:
             self.subscribe()
         self._face_learned = True
-        #self._app.stop()
 
     def subscribe(self):
         print("Subscribed")

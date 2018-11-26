@@ -9,20 +9,20 @@ class ObstacleAvoidance(ALModule):
         session = pepper.session
         self.motion = session.service("ALMotion")
         self.posture = session.service("ALRobotPosture")
-        self.__setExternalCollisionProtection()
+        self.__set_external_collision_protection()
         self._found = False
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
-    def setFound(self, found):
+    def set_found(self, found):
         self._found = found
 
-    def __setExternalCollisionProtection(self):
+    def __set_external_collision_protection(self):
         self.motion.setExternalCollisionProtectionEnabled("All", True)
 
     def move_to_concurrently(self):
-        self._executor.submit(self.__moveTo)
+        self._executor.submit(self.__move_to)
 
-    def __moveTo(self, distance = 10, theta = 0):
+    def __move_to(self, distance=10, theta=0):
         while not self._found:
             self.motion.moveTo(distance, 0, theta)
             if self.posture.getPostureFamily() == "Standing":

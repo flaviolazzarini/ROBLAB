@@ -52,7 +52,6 @@ class FaceRecognition(object):
         """
         Callback for event FaceDetected.
         """
-        print "Hoi Matej"
         # Unsubscribe from to prevent multiple triggers
         self.unsubscribe()
 
@@ -79,8 +78,6 @@ class FaceRecognition(object):
             self._person_seen = True
         else:
             self.subscribe()
-
-        #self._app.stop()
 
     def subscribe(self):
         self.subscriber = self.memory.subscriber("FaceDetected")
