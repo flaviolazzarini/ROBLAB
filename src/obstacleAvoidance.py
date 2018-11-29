@@ -3,6 +3,7 @@ from pynaoqi_mate import Robot
 from configuration import PepperConfiguration
 from naoqi import ALModule
 
+
 class ObstacleAvoidance(ALModule):
 
     def __init__(self, pepper):
@@ -28,6 +29,3 @@ class ObstacleAvoidance(ALModule):
             if self.posture.getPostureFamily() == "Standing":
                 self.motion.moveTo(-.1, 0, 0)
                 self.motion.moveTo(0, 0, -0.4)
-
-        self._executor.shutdown()
-        #TODO: Stop executor

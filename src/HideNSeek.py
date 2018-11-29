@@ -1,4 +1,6 @@
 import time
+
+import numpy as np
 import qi
 
 from naoqi import ALModule
@@ -9,6 +11,8 @@ from FaceLearning import FaceLearning
 from WaitingAnimation import WaitingAnimation
 from obstacleAvoidance import ObstacleAvoidance
 from FaceTracker import FaceTracker
+from Exploration import Exploration
+from MapSearcher import start_search
 
 
 class HideNSeek(ALModule):
@@ -59,15 +63,20 @@ class HideNSeek(ALModule):
 
         animation = WaitingAnimation()
         animation.start(self.robot, 10)
-        obstacleAvoidance = ObstacleAvoidance(self.robot)
-        obstacleAvoidance.move_to_concurrently()
+        exploration = Exploration(self.robot)
+        exploration.relocate_in_map([0, 0])
+        map = exploration.get_current_map()
+        learn_layer = np.zeros(np.array(map).shape)
+        qi.async(start_search, exploration, map, learn_layer, delay=0)
+        # obstacleAvoidance = ObstacleAvoidance(self.robot)
+        # obstacleAvoidance.move_to_concurrently()
 
         while person_name != self._person_to_search:
             print "searching()"
             known_face, person_name = self.faceRecognition.search_face_blocking()
             self.tracker.start_face_tracking()
         self.tracker.move_to_target()
-        obstacleAvoidance.set_found(True)
+        # obstacleAvoidance.set_found(True)
         self.tts.say("Found you " + person_name)
         time.sleep(0)
         self.tracker.stop_face_tracking()
