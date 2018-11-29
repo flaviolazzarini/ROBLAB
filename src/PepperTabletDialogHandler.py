@@ -96,6 +96,7 @@ class PepperTabletDialogHandler(object):
     def __get_result_and_reset(self):
         result = self._result
         self._result = None
+        self._input_received = False
         return result
 
 

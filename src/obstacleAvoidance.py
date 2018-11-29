@@ -28,3 +28,6 @@ class ObstacleAvoidance(ALModule):
             if self.posture.getPostureFamily() == "Standing":
                 self.motion.moveTo(-.1, 0, 0)
                 self.motion.moveTo(0, 0, -0.4)
+
+        self._executor.shutdown()
+        #TODO: Stop executor
