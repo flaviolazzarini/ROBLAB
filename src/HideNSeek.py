@@ -13,6 +13,7 @@ from obstacleAvoidance import ObstacleAvoidance
 from FaceTracker import FaceTracker
 from Exploration import Exploration
 from MapSearcher import start_search
+import MapSearcher
 
 
 class HideNSeek(ALModule):
@@ -64,7 +65,6 @@ class HideNSeek(ALModule):
         animation = WaitingAnimation()
         animation.start(self.robot, 10)
         exploration = Exploration(self.robot)
-        exploration.relocate_in_map([0, 0])
         map = exploration.get_current_map()
         learn_layer = np.zeros(np.array(map).shape)
         qi.async(start_search, exploration, map, learn_layer, delay=0)
@@ -72,9 +72,10 @@ class HideNSeek(ALModule):
         # obstacleAvoidance.move_to_concurrently()
 
         while person_name != self._person_to_search:
-            print "searching()"
             known_face, person_name = self.faceRecognition.search_face_blocking()
-            self.tracker.start_face_tracking()
+            #self.tracker.start_face_tracking()
+            time.sleep(0.5)
+        MapSearcher.IS_FINISHED = True
         self.tracker.move_to_target()
         # obstacleAvoidance.set_found(True)
         self.tts.say("Found you " + person_name)

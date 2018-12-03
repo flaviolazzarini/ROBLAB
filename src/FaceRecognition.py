@@ -27,10 +27,10 @@ class FaceRecognition(object):
 
     def search_face_blocking(self, timeout=None):
         future = self.search_face_concurrently()
-        return future.result(timeout)
+        return future.wait()
 
     def search_face_concurrently(self):
-        future = self._executor.submit(self.__search_face_logic)
+        future = qi.async(self.__search_face_logic, delay=0)
         return future
 
     def __search_face_logic(self):
@@ -83,7 +83,7 @@ class FaceRecognition(object):
         self.subscriber = self.memory.subscriber("FaceDetected")
         self.subscriber.signal.connect(self.on_human_tracked)
         self.face_detection = self.session.service("ALFaceDetection")
-        self.face_detection.setRecognitionConfidenceThreshold(0.3)
+        self.face_detection.setRecognitionConfidenceThreshold(0.95)
         self.face_detection.subscribe("FaceRecognition")
 
     def unsubscribe(self):

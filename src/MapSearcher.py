@@ -1,13 +1,15 @@
 import math
 from itertools import product
-
-import qi
+import concurrent.futures
 import numpy as np
 import sys
 
-from ArrayDistributor import distribute_values
+import qi
+import scipy.ndimage
 
 COST_OF_SINGLE_MOVE = 10
+
+IS_FINISHED = False
 
 
 def start_search(exploration, map_exploration, map_learn):
@@ -15,20 +17,20 @@ def start_search(exploration, map_exploration, map_learn):
     map_obstacles = (-1 * (100 - map_exploration)) * 2  # 0 = free / -100 = not explored / -200 = obstacle
     map_movement = np.zeros_like(map_obstacles)
 
+    movement_future = qi.async(exploration.relocate_in_map, [0, 0],delay=0)
+
     position = exploration.get_current_position_in_map_array()
     current_x = position[0]
     current_y = position[1]
 
-    movement_future = None
-
-    while max(map(max, map_movement + map_obstacles)) > -COST_OF_SINGLE_MOVE:
+    while not IS_FINISHED and max(map(max, map_movement + map_obstacles)) > -COST_OF_SINGLE_MOVE:
         current_x, current_y = do_multiple_virtual_moves(
             current_x,
             current_y,
             map_learn,
             map_movement,
             map_obstacles,
-            10)
+            15)
 
         position = exploration.get_current_position_in_map_array()
         x_diff = current_x - position[0]
@@ -50,12 +52,10 @@ def start_search(exploration, map_exploration, map_learn):
         print('movement offset x=' + str(x_diff) + ' y=' + str(y_diff) + ' theta=' + str(target_angle))
         print('')
 
-        movement_future = qi.async(
-            exploration.navigate_to,
-            math.fabs(x_diff * meters_per_pixel),
-            math.fabs(y_diff * meters_per_pixel),
-            -position[2] + target_angle,
-            delay=0)
+        movement_future = qi.async(exploration.navigate_to,
+                                          math.fabs(x_diff * meters_per_pixel),
+                                          math.fabs(y_diff * meters_per_pixel),
+                                          -position[2] + target_angle, delay=0)
 
 
 def do_multiple_virtual_moves(current_x, current_y, map_learn, map_movement, map_obstacles, max_step_number):
@@ -65,12 +65,13 @@ def do_multiple_virtual_moves(current_x, current_y, map_learn, map_movement, map
             map_learn[current_y][current_x] = 0
         map_movement[current_y][current_x] = map_movement[current_y][current_x] - COST_OF_SINGLE_MOVE
 
+        map_learn_distributed = scipy.ndimage.filters.gaussian_filter(map_learn, sigma=30)
+
         env_obstacles = neighbors_in_radius(6, current_y, current_x, map_obstacles)
-        env_learn = neighbors_in_radius(6, current_y, current_x, map_learn)
-        env_learn_distributed = distribute_values(env_learn)
+        env_learn = neighbors_in_radius(6, current_y, current_x, map_learn_distributed)
         env_movement = neighbors_in_radius(6, current_y, current_x, map_movement)
 
-        new_x, new_y = find_next_move(env_learn_distributed, env_obstacles, env_movement, 7, 7)
+        new_x, new_y = find_next_move(env_learn, env_obstacles, env_movement, 7, 7)
 
         current_x = current_x + (new_x - 7)
         current_y = current_y + (new_y - 7)

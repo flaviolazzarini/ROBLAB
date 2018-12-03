@@ -61,7 +61,7 @@ class FaceLearning(object):
         self.subscriber = self.memory.subscriber("FaceDetected")
         self.subscriber.signal.connect(self.on_human_tracked)
         self.face_detection = self.session.service("ALFaceDetection")
-        self.face_detection.setRecognitionConfidenceThreshold(0.3)
+        self.face_detection.setRecognitionConfidenceThreshold(0.95)
         self.face_detection.subscribe("FaceRecognition")
 
     def unsubscribe(self):
