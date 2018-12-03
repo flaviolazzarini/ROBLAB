@@ -26,8 +26,9 @@ class FaceRecognition(object):
         self._executor = None
 
     def search_face_blocking(self, timeout=None):
-        future = self.search_face_concurrently()
-        return future.wait()
+        return self.__search_face_logic()
+        # future = self.search_face_concurrently()
+        # return future.wait()
 
     def search_face_concurrently(self):
         future = qi.async(self.__search_face_logic, delay=0)

@@ -38,8 +38,9 @@ class PepperTabletDialogHandler(object):
         Raises:
         TimeoutError: If the user makes no Input before the given timeout.
         """
-        future = self.show_input_text_dialog_concurrently(text_dialog, ok_button_text, cancel_button_text)
-        return future.result(timeout)
+        return self.__show_input_text_dialog_logic(text_dialog, ok_button_text, cancel_button_text)
+        # future = self.show_input_text_dialog_concurrently(text_dialog, ok_button_text, cancel_button_text)
+        # return future.result(timeout)
 
     def show_input_text_dialog_concurrently(self, text_dialog,
                                             ok_button_text="OK",
