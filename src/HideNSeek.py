@@ -14,6 +14,7 @@ from FaceTracker import FaceTracker
 from Exploration import Exploration
 from MapSearcher import start_search
 import MapSearcher
+from InitAnimation import InitAnimation
 
 
 class HideNSeek(ALModule):
@@ -64,6 +65,8 @@ class HideNSeek(ALModule):
 
         animation = WaitingAnimation()
         animation.start(self.robot, 10)
+        initAnimation = InitAnimation()
+        initAnimation.start(self.robot)
         exploration = Exploration(self.robot)
         map = exploration.get_current_map()
         learn_layer = np.zeros(np.array(map).shape)
