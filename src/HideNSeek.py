@@ -37,6 +37,8 @@ class HideNSeek(ALModule):
         #start robot
         self.motion = self.session.service("ALMotion")
         self.motion.wakeUp()
+        self.initAnimation = InitAnimation()
+        self.initAnimation.start(self.robot)
 
     def run(self):
         print "Starting HideNSeek"
@@ -65,8 +67,7 @@ class HideNSeek(ALModule):
 
         animation = WaitingAnimation()
         animation.start(self.robot, 10)
-        initAnimation = InitAnimation()
-        initAnimation.start(self.robot)
+        self.initAnimation.start(self.robot)
         exploration = Exploration(self.robot)
         map = exploration.get_current_map()
         learn_layer = np.zeros(np.array(map).shape)
