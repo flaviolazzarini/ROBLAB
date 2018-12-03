@@ -1,6 +1,8 @@
 import concurrent
 from time import sleep
 
+import qi
+
 
 class FaceLearning(object):
     def __init__(self, robot):
@@ -19,11 +21,12 @@ class FaceLearning(object):
         self._face_learned = False
 
     def learn_face_blocking(self, name, timeout=None):
-        future = self.learn_face_concurrently(name)
-        return future.result(timeout)
+        # future = self.learn_face_concurrently(name)
+        # return future.wait()
+        return self.__learn_face_logic(name)
 
     def learn_face_concurrently(self, name):
-        future = self._executor.submit(self.__learn_face_logic, name)
+        future = qi.async(self.__learn_face_logic, delay=0)
         return future
 
     def __learn_face_logic(self, name):
