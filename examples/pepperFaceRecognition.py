@@ -138,7 +138,7 @@ if __name__ == '__main__':
                         connect_ip,  # parent broker IP
                         9559)  # parent broker port
     app = qi.Application(["--qi-url=" + connection_url])  # Connection to robot
-    app.start()
+    app.run()
     session = app.session
     global FaceRec
 
