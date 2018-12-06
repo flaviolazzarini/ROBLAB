@@ -9,7 +9,7 @@ from naoqi import ALModule
 import cognitive_face as CF
 import logging
 
-
+#bla
 class ALAzureFaceDetection(ALModule):
     def __init__(self, myrobot):
         self.session = myrobot.session
