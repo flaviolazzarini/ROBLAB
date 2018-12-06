@@ -1,6 +1,6 @@
 # need to install futures for python 2.7
 import concurrent.futures
-
+from time import sleep
 
 class PepperTabletDialogHandler(object):
     """
@@ -14,6 +14,7 @@ class PepperTabletDialogHandler(object):
         self._result = None
         self._signal_id = None
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self._input_received = False
 
     def show_input_text_dialog_blocking(self, text_dialog,
                                         ok_button_text="OK",
@@ -37,8 +38,9 @@ class PepperTabletDialogHandler(object):
         Raises:
         TimeoutError: If the user makes no Input before the given timeout.
         """
-        future = self.show_input_text_dialog_concurrently(text_dialog, ok_button_text, cancel_button_text)
-        return future.result(timeout)
+        return self.__show_input_text_dialog_logic(text_dialog, ok_button_text, cancel_button_text)
+        # future = self.show_input_text_dialog_concurrently(text_dialog, ok_button_text, cancel_button_text)
+        # return future.result(timeout)
 
     def show_input_text_dialog_concurrently(self, text_dialog,
                                             ok_button_text="OK",
@@ -59,14 +61,13 @@ class PepperTabletDialogHandler(object):
         """
 
         future = self._executor.submit(self.__show_input_text_dialog_logic, text_dialog,
-                                          ok_button_text, cancel_button_text)
+                                       ok_button_text, cancel_button_text)
         return future
 
     def __callback_on_input_text(self, button_id, input_text):
         if button_id == 1:
             self._result = input_text
-
-        self._app.stop()
+            self._input_received = True
 
     def __show_input_text_dialog_logic(self, text_dialog, ok_button_text="OK", cancel_button_text="Cancel"):
         # type: (str, str, str) -> str
@@ -84,7 +85,8 @@ class PepperTabletDialogHandler(object):
             self._proxyALTabletService.showInputTextDialog(text_dialog, ok_button_text, cancel_button_text)
 
             self._signal_id = self._proxyALTabletService.onInputText.connect(self.__callback_on_input_text)
-            self._app.run()
+            while not self._input_received:
+                sleep(0)
 
             self._proxyALTabletService.onInputText.disconnect(self._signal_id)
         except Exception, e:
@@ -95,6 +97,7 @@ class PepperTabletDialogHandler(object):
     def __get_result_and_reset(self):
         result = self._result
         self._result = None
+        self._input_received = False
         return result
 
 

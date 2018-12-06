@@ -1,6 +1,8 @@
 import numpy
-from PIL import Image
 import array as arr
+
+from MapHelper import array_to_bw_bitmap
+
 
 class Exploration:
     def __init__(self, robot):
@@ -21,20 +23,21 @@ class Exploration:
         return path
 
     def move_to_in_map(self, position):
-        self.navigation.navigateToInMap(position)
+        errorcode = self.navigation.navigateToInMap(position)
+        if(errorcode != 0):
+            print("could not navigate to position " + position)
+
+    def navigate_to(self, x, y, theta):
+        successfull = self.navigation.navigateTo(x, y, theta)
+        if successfull == False:
+            print("could not navigate to position (" + str(x) + " / " + str(y) + ")")
 
     def move_to_origin(self):
         self.move_to_in_map([0., 0., 0.])
 
-    def get_current_map_as_array(self):
+    def get_current_position_in_map_array(self):
         result_map = self.navigation.getMetricalMap()
-        map_width = result_map[1]
-        map_height = result_map[2]
-        img = numpy.array(result_map[4]).reshape(map_width, map_height)
-        return img
-
-    def get_current_pixel(self):
-        result_map = self.navigation.getMetricalMap()
+        map_meters_per_pixel = result_map[0]
         map_width = result_map[1]
         map_height = result_map[2]
 
@@ -43,11 +46,15 @@ class Exploration:
 
         position = self.get_current_position()
 
-        return [int(width_offset + position[0]), int(height_offset + position[1])]
+        x_offset_in_pixels = (position[0] / map_meters_per_pixel)
+        y_offset_in_pixels = (position[1] / map_meters_per_pixel)
+        theta = position[2]
+
+        return [int(width_offset + x_offset_in_pixels), int(height_offset + y_offset_in_pixels), theta]
 
     def get_current_position(self):
         pose = self.navigation.getRobotPositionInMap()
-        xy_position = arr.array('f', [pose[0][0], pose[0][1]])
+        xy_position = arr.array('f', [pose[0][0], pose[0][1], pose[0][2]])
         return xy_position
 
     def save_current_map_as_bw_image(self, path):
@@ -56,9 +63,21 @@ class Exploration:
         map_height = result_map[2]
         img = numpy.array(result_map[4]).reshape(map_width, map_height)
         img = (100 - img) * 2.55  # from 0..100 to 255..0
-        img = numpy.array(img, numpy.uint8)
-        result = Image.frombuffer('L', (map_width, map_height), img, 'raw', 'L', 0, 1)
-        result.save(path)
+        array_to_bw_bitmap(img, path)
+
+    def get_current_map(self):
+        result_map = self.navigation.getMetricalMap()
+        map_width = result_map[1]
+        map_height = result_map[2]
+        map = numpy.array(result_map[4]).reshape(map_width, map_height)
+        return map
+
+    def get_meters_per_pixel(self):
+        result_map = self.navigation.getMetricalMap()
+        return result_map[0]
+
+    def get_current_map_meters_per_pixel(self):
+        return self.navigation.getMetricalMap()[0]
 
     def load_map(self, path):
         self.navigation.stopLocalization()
@@ -67,3 +86,6 @@ class Exploration:
         guess = [0., 0.] # assuming the robot is not far from the place where he started the loaded exploration.
         self.navigation.relocalizeInMap(guess)
         self.navigation.startLocalization()
+
+    def relocate_in_map(self, guess):
+        self.navigation.relocalizeInMap(guess)
