@@ -11,9 +11,9 @@ from FaceLearning import FaceLearning
 from WaitingAnimation import WaitingAnimation
 from obstacleAvoidance import ObstacleAvoidance
 from FaceTracker import FaceTracker
-from Exploration import Exploration
-from MapSearcher import start_search
-import MapSearcher
+#from Exploration import Exploration
+#from MapSearcher import start_search
+#import MapSearcher
 from InitAnimation import InitAnimation
 from ALAzureFaceDetection import ALAzureFaceDetection
 
@@ -85,7 +85,7 @@ class HideNSeek(ALModule):
             found = fd.detectIfFaceIDIsInSight(personId)
             self.tracker.stop_face_tracking()
             time.sleep(0.1)
-        MapSearcher.IS_FINISHED = True
+        # MapSearcher.IS_FINISHED = True
         self.tracker.move_to_target()
         # obstacleAvoidance.set_found(True)
         self.tts.say("Found you " + person_name)

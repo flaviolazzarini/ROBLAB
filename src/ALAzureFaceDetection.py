@@ -1,17 +1,19 @@
 from PIL import Image
-from configuration import PepperConfiguration
 from io import BytesIO
+from configuration import PepperConfiguration
+import time
 
 from cognitive_face import CognitiveFaceException
 from pynaoqi_mate import Robot
 
-from naoqi import ALModule
 import cognitive_face as CF
 import logging
 
-#bla
-class ALAzureFaceDetection(ALModule):
+
+class ALAzureFaceDetection():
     def __init__(self, myrobot):
+        self.robot = myrobot
+        self.camera = self.robot.ALPhotoCapture
         self.session = myrobot.session
 
         # Initialize Azure Face Service Connection
@@ -20,25 +22,23 @@ class ALAzureFaceDetection(ALModule):
         self.personGroupID = 'hideandseek_01'
 
         # Initialize Naoqi Camera Service
-        self._serviceID = "AzureService"
-        self._AL_kTopCamera = 0
-        self._AL_kQVGA = 1  # 320x240
-        self._AL_kBGRColorSpace = 11
-        self._AL_fps = 2
-        self.video_service = self.session.service("ALVideoDevice")
+        self.path = "/home/nao/hs18_hideandseek/"
+        self.fileName ="temp.jpg"
+        self.camera.setResolution(3)
+        self.camera.setColorSpace(9)
 
         # Initialize Logging
+        logging.getLogger().setLevel(logging.WARNING)
         logging.info('ALAzureFaceDetection initialized')
+
 
     def detectIfFaceIDIsInSight(self, persistedFaceID):
 
-        images = self.getPicturesFromCamera(1)
-
-        images[0].save("./pictures/_temp.png", "PNG")
-        faceDetectResults = CF.face.detect('./pictures/_temp.png')
+        imagePath = self.getPictureFromCamera()
+        faceDetectResults = CF.face.detect(imagePath)
 
         if len(faceDetectResults) == 0:
-            logging.warning("No Face found to learn")
+            logging.warning("No Face detected")
             return False
 
         else:
@@ -56,13 +56,10 @@ class ALAzureFaceDetection(ALModule):
 
     def learnFace(self, threshold, displayName):
 
-        images = self.getPicturesFromCamera(1)
+        filePath = self.getPictureFromCamera()
+        faceDetectResults = CF.face.detect(filePath)
 
-        images[0].save("./pictures/_temp.png", "PNG")
-        image = images[0]
-
-        faceDetectResults = CF.face.detect('./pictures/_temp.png')
-
+        image = open(self.path+self.fileName, "rb")
 
         if len(faceDetectResults) == 0:
             logging.warning("learnFace - No Face found to learn")
@@ -71,9 +68,10 @@ class ALAzureFaceDetection(ALModule):
         elif len(faceDetectResults) >= 1:
             faceIdentifyResult = self.identifyPerson(faceDetectResults)
             if len(faceIdentifyResult[0]['candidates']) == 0:
-                #self.logging.info("The person is unknown to the Azure Service")
+
+                logging.info("The person is unknown to the Azure Service")
                 personID = str(CF.person.create(self.personGroupID, displayName)['personId'])
-                CF.person.add_face('./pictures/_temp.png', self.personGroupID, personID)
+                CF.person.add_face(filePath, self.personGroupID, personID)
                 return personID
 
             else:
@@ -83,7 +81,7 @@ class ALAzureFaceDetection(ALModule):
                     return personID
 
                 else:
-                    CF.person.add_face('./pictures/_temp.png',
+                    CF.person.add_face(filePath,
                                        self.personGroupID,
                                        str(faceIdentifyResult[0]['candidates'][0]['personId']),
                                        )
@@ -91,59 +89,33 @@ class ALAzureFaceDetection(ALModule):
 
 
         else:
-            #self.logging.warning("There where " + str(len(faceDetectResults)) +
-            #                     " detected. The program can't handle this many faces yet."
-            #                     )
+            logging.warning("There where " + str(len(faceDetectResults)) +
+                                 " detected. The program can't handle this many faces yet."
+                                 )
             return None
 
     def identifyPerson(self, faceDetectResult):
 
-        #self.logging.info("Create new empty faceID list")
+        logging.info("Create new empty faceID list")
         faceIDs = []
 
         for face in faceDetectResult:
-            #self.logging.info("Added FaceID " + str(face['faceId']) + " Face Rectangle to faceID list")
+            logging.info("Added FaceID " + str(face['faceId']) + " Face Rectangle to faceID list")
             faceIDs.append(face['faceId'])
 
         if faceIDs == 0:
-            #self.logging.critical("No Face was found inside of faceDetectedResult")
+            logging.critical("No Face was found inside of faceDetectedResult")
             result = None
         else:
-            #self.logging.info("Send FaceId to Azure Face Service to identify Persons")
+            logging.info("Send FaceId to Azure Face Service to identify Persons")
 
             result = CF.face.identify(faceIDs, self.personGroupID, )
 
         return result
 
-
-    def getPicturesFromCamera(self, numberOfImagesToTake=1):
-        video_client = self.video_service.subscribeCamera(self._serviceID,
-                                                          self._AL_kTopCamera,
-                                                          self._AL_kQVGA,
-                                                          self._AL_kBGRColorSpace,
-                                                          self._AL_fps
-                                                          )
-
-        images = []
-        for _ in range(numberOfImagesToTake):
-
-            # Get Image from Pepper
-            naoImage = self.video_service.getImageRemote(video_client)
-
-            #Extract Image Information
-            imageWidth = naoImage[0]
-            imageHeight = naoImage[1]
-            array = naoImage[6]
-            image_string = str(bytearray(array))
-
-            # Create Image from Immage Information
-            image = Image.frombytes("RGB", (imageWidth, imageHeight), image_string)
-            images.append(image)
-
-        # Unsubscribe from Pepper
-        self.video_service.unsubscribe(video_client)
-
-        return images
+    def getPictureFromCamera(self):
+        self.camera.takePicture(self.path, self.fileName)
+        return str(self.path + self.fileName)
 
     def __createFileLikeFromImageData__(self):
         pass
@@ -166,10 +138,10 @@ class ALAzureFaceDetection(ALModule):
 
         try:
             CF.person.delete(personGroupID, personID)
-            #self.logging.info("Person was deleted successful")
+            logging.info("Person was deleted successful")
         except CognitiveFaceException:
             pass
-            #self.logging.error("Error occured during deletion of Person. Continue Program.")
+            logging.error("Error occured during deletion of Person. Continue Program.")
 
     def deletePersonGroup(self):
         """
@@ -186,10 +158,10 @@ class ALAzureFaceDetection(ALModule):
 
         try:
             CF.person_group.delete(self.personGroupID)
-            #self.logging.info("Person was deleted successful")
+            logging.info("Person was deleted successful")
         except CognitiveFaceException:
             pass
-            #self.logging.error("Error occured during deletion of Person. Continue Program.")
+            logging.error("Error occured during deletion of Person. Continue Program.")
 
     def initPersonGroup(self, personGroupID, personGroupName):
         CF.person_group.create(personGroupID, personGroupName)
@@ -204,9 +176,11 @@ if __name__ == "__main__":
     config = PepperConfiguration("Amber", "localhost", 9559)
     robot = Robot(config)
     fd = ALAzureFaceDetection(robot)
-    personId = fd.learnFace(0.5, "Bushi")
+    personId = fd.learnFace(0.6, "Flavio")
     fd.trainPersonGroup()
-
+    print "Face learned"
+    time.sleep(5)
+    print "Face detection started"
     for _ in range(5):
         result = fd.detectIfFaceIDIsInSight(personId)
         print result
