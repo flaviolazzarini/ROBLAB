@@ -17,29 +17,22 @@ class FaceRecognition(object):
         self.subscriber = None
         self.face_detection = None
         self._knownFace = None
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self._name = None
         self._person_seen = False
-
-
-    def deleteExtractor(self):
-        self._executor = None
+        self._subscribed = False
 
     def search_face_blocking(self, timeout=None):
         return self.__search_face_logic()
         # future = self.search_face_concurrently()
         # return future.wait()
 
-    def search_face_concurrently(self):
-        future = qi.async(self.__search_face_logic, delay=0)
-        return future
-
     def __search_face_logic(self):
         try:
             self.subscribe()
+            print("search_face_logic")
             while not self._person_seen:
-                sleep(0)
-
+                sleep(0.1)
+            self._person_seen = False
         except Exception, e:
             print "Error: ", e
 
@@ -78,15 +71,23 @@ class FaceRecognition(object):
                     self._name = faceExtraInfo[2]
             self._person_seen = True
         else:
-            self.subscribe()
+            if not self._subscribed:
+                self.subscribe()
 
     def subscribe(self):
-        self.subscriber = self.memory.subscriber("FaceDetected")
-        self.subscriber.signal.connect(self.on_human_tracked)
-        self.face_detection = self.session.service("ALFaceDetection")
-        self.face_detection.setRecognitionConfidenceThreshold(0.95)
-        self.face_detection.subscribe("FaceRecognition")
+        if not self._subscribed:
+            self.subscriber = self.memory.subscriber("FaceDetected")
+            self.subscriber.signal.connect(self.on_human_tracked)
+            self.face_detection = self.session.service("ALFaceDetection")
+            self.face_detection.setRecognitionConfidenceThreshold(0.3)
+            self.face_detection.subscribe("FaceRecognition")
+            self._subscribed = True
+            print("subscribe face_rec")
+            sleep(0.1)
 
     def unsubscribe(self):
-        self.subscriber = None
-        self.face_detection.unsubscribe("FaceRecognition")
+        if self._subscribed:
+            self.subscriber = None
+            self.face_detection.unsubscribe("FaceRecognition")
+            self._subscribed = False
+            print("unsubscribe face_rec")
