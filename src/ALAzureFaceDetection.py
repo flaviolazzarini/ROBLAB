@@ -6,15 +6,26 @@ import time
 from cognitive_face import CognitiveFaceException
 from pynaoqi_mate import Robot
 
+from urllib2 import urlopen
+
 import cognitive_face as CF
 import logging
 
+
+class azureImageWraper():
+    def __init__(self, image_data):
+        self.image_data = image_data
+
+    def read(self):
+        return self.image_data
 
 class ALAzureFaceDetection():
     def __init__(self, myrobot):
         self.robot = myrobot
         self.camera = self.robot.ALPhotoCapture
         self.session = myrobot.session
+        self.video_service = self.session.service("ALVideoDevice")
+        self._serviceID = "Test"
 
         # Initialize Azure Face Service Connection
         CF.Key.set('5b1af2b251ee48f99c425e0c216ce013')
@@ -34,8 +45,8 @@ class ALAzureFaceDetection():
 
     def detectIfFaceIDIsInSight(self, persistedFaceID):
 
-        imagePath = self.getPictureFromCamera()
-        faceDetectResults = CF.face.detect(imagePath)
+        wrapper = self.getPictureFromCamera()
+        faceDetectResults = CF.face.detect(wrapper)
 
         if len(faceDetectResults) == 0:
             logging.warning("No Face detected")
@@ -56,8 +67,8 @@ class ALAzureFaceDetection():
 
     def learnFace(self, threshold, displayName):
 
-        filePath = self.getPictureFromCamera()
-        faceDetectResults = CF.face.detect(filePath)
+        wrapper = self.getPictureFromCamera()
+        faceDetectResults = CF.face.detect(wrapper)
 
         image = open(self.path+self.fileName, "rb")
 
@@ -71,17 +82,17 @@ class ALAzureFaceDetection():
 
                 logging.info("The person is unknown to the Azure Service")
                 personID = str(CF.person.create(self.personGroupID, displayName)['personId'])
-                CF.person.add_face(filePath, self.personGroupID, personID)
+                CF.person.add_face(wrapper, self.personGroupID, personID)
                 return personID
 
             else:
                 if faceIdentifyResult[0]['candidates'][0]['confidence'] < float(threshold):
                     personID = str(CF.person.create(self.personGroupID, displayName)['personId'])
-                    CF.person.add_face(image, self.personGroupID, personID)
+                    CF.person.add_face(wrapper, self.personGroupID, personID)
                     return personID
 
                 else:
-                    CF.person.add_face(filePath,
+                    CF.person.add_face(wrapper,
                                        self.personGroupID,
                                        str(faceIdentifyResult[0]['candidates'][0]['personId']),
                                        )
@@ -113,9 +124,47 @@ class ALAzureFaceDetection():
 
         return result
 
+
     def getPictureFromCamera(self):
+        stream = urlopen('http://192.168.1.110:8080/video/mjpeg')
+        byt = bytes()
+        exit = False
+        while not exit:
+            byt += stream.read(1024)
+            a = byt.find(b'\xff\xd8')
+            b = byt.find(b'\xff\xd9')
+            if a != -1 and b != -1:
+                jpg = byt[a:b + 2]
+                byt = byt[b + 2:]
+                exit = True
+
+        wrapper = azureImageWraper(jpg)
+        return wrapper
+
+    def getPictureFromCamera2(self):
         self.camera.takePicture(self.path, self.fileName)
         return str(self.path + self.fileName)
+
+    def getPictureFromCamera3(self):
+        video_client = self.video_service.subscribeCamera(self._serviceID,
+                                                          0,
+                                                          3,
+                                                          11,
+                                                          10
+                                                          )
+
+        # Get Image from Pepper
+        naoImage = self.video_service.getImageRemote(video_client)
+        #Extract Image Information
+        imageWidth = naoImage[0]
+        imageHeight = naoImage[1]
+        array = naoImage[6]
+        image_string = str(bytearray(array))
+        # Create Image from Immage Information
+        image = Image.frombytes("RGB", (imageWidth, imageHeight), image_string)
+        self.video_service.unsubscribe(video_client)
+
+        return image
 
     def __createFileLikeFromImageData__(self):
         pass

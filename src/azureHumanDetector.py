@@ -1,7 +1,15 @@
+from urllib2 import urlopen
+
 import requests
-from PIL import Image
 from naoqi import ALModule
 import logging
+
+class azureImageWraper():
+    def __init__(self, image_data):
+        self.image_data = image_data
+
+    def read(self):
+        return self.image_data
 
 class AzureHumanDetector(ALModule):
     def __init__(self, robot):
@@ -26,11 +34,8 @@ class AzureHumanDetector(ALModule):
         logging.info('AzureHumanDetector initialized')
 
     def detect_if_people_are_in_sight(self):
-        # images = self.getPictureFromCamera()
-        # images[0].save("./pictures/_temp.png", "PNG")
-
-
-        image_data = open("./pictures/_temp.png", "rb").read()
+        wrapper = self.getPictureFromCamera()
+        image_data = wrapper.read()
 
         headers    = {'Ocp-Apim-Subscription-Key': self.subscription_key,
                       'Content-Type': 'application/octet-stream'}
@@ -50,5 +55,17 @@ class AzureHumanDetector(ALModule):
         return False
 
     def getPictureFromCamera(self):
-        self.camera.takePicture(self.path, self.fileName)
-        return str(self.path + self.fileName)
+        stream = urlopen('http://192.168.1.110:8080/video/mjpeg')
+        byt = bytes()
+        exit = False
+        while not exit:
+            byt += stream.read(1024)
+            a = byt.find(b'\xff\xd8')
+            b = byt.find(b'\xff\xd9')
+            if a != -1 and b != -1:
+                jpg = byt[a:b + 2]
+                byt = byt[b + 2:]
+                exit = True
+
+        wrapper = azureImageWraper(jpg)
+        return wrapper

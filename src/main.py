@@ -1,9 +1,5 @@
-import naoqi_proxy_python_classes
-import qi
 from configuration import PepperConfiguration
 from pynaoqi_mate import Robot
-from WaitingAnimation import WaitingAnimation
-from FaceRecognition import FaceRecognition
 
 from HideNSeek import HideNSeek
 

@@ -1,11 +1,10 @@
 import math
 from itertools import product
-import concurrent.futures
 import numpy as np
 import sys
 
 import qi
-import scipy.ndimage
+# import scipy.ndimage
 
 COST_OF_SINGLE_MOVE = 10
 
@@ -65,7 +64,8 @@ def do_multiple_virtual_moves(current_x, current_y, map_learn, map_movement, map
             map_learn[current_y][current_x] = 0
         map_movement[current_y][current_x] = map_movement[current_y][current_x] - COST_OF_SINGLE_MOVE
 
-        map_learn_distributed = scipy.ndimage.filters.gaussian_filter(map_learn, sigma=30)
+        #map_learn_distributed = scipy.ndimage.filters.gaussian_filter(map_learn, sigma=30)
+        map_learn_distributed = map_learn
 
         env_obstacles = neighbors_in_radius(6, current_y, current_x, map_obstacles)
         env_learn = neighbors_in_radius(6, current_y, current_x, map_learn_distributed)

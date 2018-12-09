@@ -100,4 +100,11 @@ class PepperTabletDialogHandler(object):
         self._input_received = False
         return result
 
+if __name__ == "__main__":
 
+    config = PepperConfiguration("Porter")
+    robot = Robot(config)
+
+    slm = PepperTabletDialogHandler(robot)
+    slm.show_input_text_dialog_blocking()
+    print ""

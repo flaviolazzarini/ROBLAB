@@ -11,11 +11,12 @@ from FaceLearning import FaceLearning
 from WaitingAnimation import WaitingAnimation
 from obstacleAvoidance import ObstacleAvoidance
 from FaceTracker import FaceTracker
-#from Exploration import Exploration
-#from MapSearcher import start_search
-#import MapSearcher
+from Exploration import Exploration
+from MapSearcher import start_search
+import MapSearcher
 from InitAnimation import InitAnimation
 from ALAzureFaceDetection import ALAzureFaceDetection
+from azureHumanDetector import AzureHumanDetector
 
 
 class HideNSeek(ALModule):
@@ -45,8 +46,13 @@ class HideNSeek(ALModule):
         print "Starting HideNSeek"
         face_learned = False
         fd = ALAzureFaceDetection(self.robot)
+        hd = AzureHumanDetector(self.robot)
         while not face_learned:
-            known_face, person_name = self.faceRecognition.search_face_blocking()
+            while not hd.detect_if_people_are_in_sight():
+                pass
+
+            known_face = False
+            # known_face, person_name = self.faceRecognition.search_face_blocking()
             print("after search face")
             if not known_face:
                 self.tts.say("I don't know you yet, what is your name?")
@@ -71,21 +77,21 @@ class HideNSeek(ALModule):
         animation = WaitingAnimation()
         animation.start(self.robot, 10)
         self.initAnimation.start(self.robot)
-        # exploration = Exploration(self.robot)
-        # map = exploration.get_current_map()
-        # learn_layer = np.zeros(np.array(map).shape)
-        # qi.async(start_search, exploration, map, learn_layer, delay=0)
-        obstacleAvoidance = ObstacleAvoidance(self.robot)
-        obstacleAvoidance.move_to_concurrently()
+        exploration = Exploration(self.robot)
+        map = exploration.get_current_map()
+        learn_layer = np.zeros(np.array(map).shape)
+        qi.async(start_search, exploration, map, learn_layer, delay=0)
+        #obstacleAvoidance = ObstacleAvoidance(self.robot)
+        #obstacleAvoidance.move_to_concurrently()
 
         found = False
         while not found:
             #known_face, person_name = self.faceRecognition.search_face_blocking()
-            self.tracker.start_face_tracking()
+            #self.tracker.start_face_tracking()
             found = fd.detectIfFaceIDIsInSight(personId)
-            self.tracker.stop_face_tracking()
+            #self.tracker.stop_face_tracking()
             time.sleep(0.1)
-        # MapSearcher.IS_FINISHED = True
+        MapSearcher.IS_FINISHED = True
         self.tracker.move_to_target()
         # obstacleAvoidance.set_found(True)
         self.tts.say("Found you " + person_name)
