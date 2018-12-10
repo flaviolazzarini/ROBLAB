@@ -11,6 +11,27 @@ COST_OF_SINGLE_MOVE = 10
 IS_FINISHED = False
 
 
+def start_random_search(exploration):
+    old_x_positions = []
+    old_y_positions = []
+
+    while not IS_FINISHED:
+        random_x = None
+        while random_x is None or random_x in old_x_positions:
+            random_x = random.uniform(-8, 8)
+        old_x_positions.append(random_x)
+
+        random_y = None
+        while random_y is None or random_y in old_y_positions:
+            random_y = random.uniform(-8, 8)
+        old_y_positions.append(random_y)
+
+        target = [random_x, random_y, 0.]
+        print('move to ' + str(target))
+        print('currently at ' + str(exploration.get_current_position()))
+        exploration.navigate_to(random_x, random_y, 0)
+
+
 def start_search(exploration, map_exploration, map_learn):
     # map = exploration_map.get_current_map()  # 0 = obstacle / 50 = not explored / 100 = free
     map_obstacles = (-1 * (100 - map_exploration)) * 2  # 0 = free / -100 = not explored / -200 = obstacle
