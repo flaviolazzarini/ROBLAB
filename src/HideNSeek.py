@@ -77,10 +77,9 @@ class HideNSeek(ALModule):
         animation = WaitingAnimation()
         animation.start(self.robot, 10)
         self.initAnimation.start(self.robot)
-        # exploration = Exploration(self.robot)
-        # map = exploration.get_current_map()
-        # learn_layer = np.zeros(np.array(map).shape)
-        # qi.async(start_search, exploration, map, learn_layer, delay=0)
+        exploration = Exploration(self.robot)
+        map = exploration.get_current_map()
+        qi.async(start_search, exploration, map, delay=0)
         obstacleAvoidance = ObstacleAvoidance(self.robot)
         obstacleAvoidance.move_to_concurrently()
 
