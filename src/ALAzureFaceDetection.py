@@ -1,3 +1,5 @@
+import io
+
 from PIL import Image
 from io import BytesIO
 from configuration import PepperConfiguration
@@ -45,7 +47,7 @@ class ALAzureFaceDetection():
 
     def detectIfFaceIDIsInSight(self, persistedFaceID):
 
-        wrapper = self.getPictureFromCamera()
+        wrapper = self.getPictureFromCamera3()
         faceDetectResults = CF.face.detect(wrapper)
 
         if len(faceDetectResults) == 0:
@@ -67,10 +69,9 @@ class ALAzureFaceDetection():
 
     def learnFace(self, threshold, displayName):
 
-        wrapper = self.getPictureFromCamera()
+        wrapper = self.getPictureFromCamera3()
         faceDetectResults = CF.face.detect(wrapper)
 
-        image = open(self.path+self.fileName, "rb")
 
         if len(faceDetectResults) == 0:
             logging.warning("learnFace - No Face found to learn")
@@ -126,7 +127,7 @@ class ALAzureFaceDetection():
 
 
     def getPictureFromCamera(self):
-        stream = urlopen('http://192.168.1.110:8080/video/mjpeg')
+        stream = urlopen('http://192.168.1.227:8080/video/mjpeg')
         byt = bytes()
         exit = False
         while not exit:
@@ -155,6 +156,7 @@ class ALAzureFaceDetection():
 
         # Get Image from Pepper
         naoImage = self.video_service.getImageRemote(video_client)
+
         #Extract Image Information
         imageWidth = naoImage[0]
         imageHeight = naoImage[1]
@@ -162,9 +164,14 @@ class ALAzureFaceDetection():
         image_string = str(bytearray(array))
         # Create Image from Immage Information
         image = Image.frombytes("RGB", (imageWidth, imageHeight), image_string)
+
         self.video_service.unsubscribe(video_client)
 
-        return image
+        with io.BytesIO() as output:
+            image.save(output, format="JPEG")
+            wrapper = azureImageWraper(output.getvalue())
+
+        return wrapper
 
     def __createFileLikeFromImageData__(self):
         pass

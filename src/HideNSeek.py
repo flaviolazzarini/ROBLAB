@@ -77,12 +77,12 @@ class HideNSeek(ALModule):
         animation = WaitingAnimation()
         animation.start(self.robot, 10)
         self.initAnimation.start(self.robot)
-        exploration = Exploration(self.robot)
-        map = exploration.get_current_map()
-        learn_layer = np.zeros(np.array(map).shape)
-        qi.async(start_search, exploration, map, learn_layer, delay=0)
-        #obstacleAvoidance = ObstacleAvoidance(self.robot)
-        #obstacleAvoidance.move_to_concurrently()
+        # exploration = Exploration(self.robot)
+        # map = exploration.get_current_map()
+        # learn_layer = np.zeros(np.array(map).shape)
+        # qi.async(start_search, exploration, map, learn_layer, delay=0)
+        obstacleAvoidance = ObstacleAvoidance(self.robot)
+        obstacleAvoidance.move_to_concurrently()
 
         found = False
         while not found:
@@ -91,9 +91,9 @@ class HideNSeek(ALModule):
             found = fd.detectIfFaceIDIsInSight(personId)
             #self.tracker.stop_face_tracking()
             time.sleep(0.1)
-        MapSearcher.IS_FINISHED = True
+        # MapSearcher.IS_FINISHED = True
         self.tracker.move_to_target()
-        # obstacleAvoidance.set_found(True)
+        obstacleAvoidance.set_found(True)
         self.tts.say("Found you " + person_name)
         time.sleep(0)
         self.tracker.stop_face_tracking()
