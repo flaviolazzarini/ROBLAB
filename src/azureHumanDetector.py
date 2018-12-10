@@ -1,7 +1,6 @@
 from urllib2 import urlopen
 
 import requests
-from naoqi import ALModule
 import logging
 
 class azureImageWraper():
@@ -11,7 +10,7 @@ class azureImageWraper():
     def read(self):
         return self.image_data
 
-class AzureHumanDetector(ALModule):
+class AzureHumanDetector():
     def __init__(self, robot):
         self.session = robot.session
 
@@ -28,13 +27,13 @@ class AzureHumanDetector(ALModule):
         self.camera.setResolution(3)
         self.camera.setColorSpace(9)
         self.path = "/home/nao/hs18_hideandseek/"
-        self.fileName = "temp.jpg"
+        self.fileName = "temp2.jpg"
 
         logging.getLogger().setLevel(logging.WARNING)
         logging.info('AzureHumanDetector initialized')
 
     def detect_if_people_are_in_sight(self):
-        wrapper = self.getPictureFromCamera()
+        wrapper = self.getPictureFromCamera2()
         image_data = wrapper.read()
 
         headers    = {'Ocp-Apim-Subscription-Key': self.subscription_key,
@@ -55,7 +54,7 @@ class AzureHumanDetector(ALModule):
         return False
 
     def getPictureFromCamera(self):
-        stream = urlopen('http://192.168.1.110:8080/video/mjpeg')
+        stream = urlopen('http://192.168.1.227:8080/video/mjpeg')
         byt = bytes()
         exit = False
         while not exit:
@@ -69,3 +68,9 @@ class AzureHumanDetector(ALModule):
 
         wrapper = azureImageWraper(jpg)
         return wrapper
+
+    def getPictureFromCamera2(self):
+        self.camera.takePicture(self.path, self.fileName)
+        return open(self.path + self.fileName, 'rd')
+
+
