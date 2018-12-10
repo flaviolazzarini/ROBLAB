@@ -67,16 +67,12 @@ def do_multiple_virtual_moves(current_x, current_y, map_learn, map_movement, map
         #map_learn_distributed = scipy.ndimage.filters.gaussian_filter(map_learn, sigma=30)
         map_learn_distributed = map_learn
 
-        env_obstacles = neighbors_in_radius(6, current_y, current_x, map_obstacles)
-        env_learn = neighbors_in_radius(6, current_y, current_x, map_learn_distributed)
-        env_movement = neighbors_in_radius(6, current_y, current_x, map_movement)
+        new_x, new_y = find_next_move(map_learn_distributed, map_obstacles, map_movement, current_x, current_y)
 
-        new_x, new_y = find_next_move(env_learn, env_obstacles, env_movement, 7, 7)
-
-        current_x = current_x + (new_x - 7)
-        current_y = current_y + (new_y - 7)
-        print ('step ' + str(step_number))
-        print ('moved to (' + str(current_x) + '|' + str(current_y) + ')')
+        current_x = new_x
+        current_y = new_y
+        print('step ' + str(step_number))
+        print('moved to (' + str(current_x) + '|' + str(current_y) + ')')
         step_number = step_number + 1
 
     return current_x, current_y
