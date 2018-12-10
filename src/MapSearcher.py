@@ -1,15 +1,22 @@
 import math
+import random
 from itertools import product
+
 import numpy as np
 import sys
 
 import qi
 
-# import scipy.ndimage
-
 COST_OF_SINGLE_MOVE = 10
 
+POOLING_FACTOR = 20
+
 IS_FINISHED = False
+
+
+def start_exploration_search(exploration, radius):
+    while not IS_FINISHED:
+        exploration.explore(radius)
 
 
 def start_random_search(exploration):
@@ -23,37 +30,41 @@ def start_random_search(exploration):
         exploration.navigate_to(random_x, random_y, 0)
 
 
-def start_search(exploration, map_exploration, map_learn):
+def start_search(exploration, map_exploration):
     # map = exploration_map.get_current_map()  # 0 = obstacle / 50 = not explored / 100 = free
     map_obstacles = (-1 * (100 - map_exploration)) * 2  # 0 = free / -100 = not explored / -200 = obstacle
     map_movement = np.zeros_like(map_obstacles)
 
-    movement_future = qi.async(exploration.relocate_in_map, [0, 0], delay=0)
+    movement_future = None
+    exploration.relocate_in_map([0, 0])
 
-    position = exploration.get_current_position_in_map_array()
-    current_x = position[0]
-    current_y = position[1]
+    while not IS_FINISHED:
+        position = exploration.get_current_position_in_map_array()
+        current_x = position[0]
+        current_y = position[1]
 
-    while not IS_FINISHED and max(map(max, map_movement + map_obstacles)) > -COST_OF_SINGLE_MOVE:
-        current_x, current_y = do_multiple_virtual_moves(
-            current_x,
-            current_y,
-            map_learn,
-            map_movement,
-            map_obstacles,
-            15)
+        pooled_shape = np.divide(map_movement.shape, POOLING_FACTOR)
+        map_movement_pooled = np.zeros(pooled_shape)
+
+        target_position = None
+        while target_position is None:
+            target_position = do_multiple_virtual_moves(
+                current_x,
+                current_y,
+                map_movement_pooled,
+                map_obstacles,
+                2)
 
         position = exploration.get_current_position_in_map_array()
-        x_diff = current_x - position[0]
-        y_diff = current_y - position[1]
+        x_diff = target_position[0] - position[0]
+        y_diff = target_position[1] - position[1]
 
-        target_angle = math.atan(x_diff / y_diff)
+        target_angle = math.atan(x_diff / y_diff+1e-10)
 
         if x_diff < 0 and y_diff < 0:
             target_angle = math.pi - target_angle
         if x_diff > 0 and y_diff < 0:
             target_angle = -(math.pi - target_angle)
-
         # exploration.move_to_in_map([current_x, current_y])
         meters_per_pixel = exploration.get_meters_per_pixel()
 
@@ -68,31 +79,44 @@ def start_search(exploration, map_exploration, map_learn):
                                    math.fabs(y_diff * meters_per_pixel),
                                    -position[2] + target_angle, delay=0)
 
+        # array_to_bw_bitmap(map_obstacles, 'c:/tmp/roblab/map-obstacles.bmp')
+        # array_to_bw_bitmap(map_movement_pooled, 'c:/tmp/roblab/pooled-map.bmp')
 
-def do_multiple_virtual_moves(current_x, current_y, map_learn, map_movement, map_obstacles, max_step_number):
+
+def do_multiple_virtual_moves(current_x, current_y, map_movement, map_obstacles, max_step_number):
     step_number = 0
+    current_x_pooled = current_x / POOLING_FACTOR
+    current_y_pooled = current_y / POOLING_FACTOR
+
     while step_number < max_step_number:
-        if map_learn[current_y][current_x] > 0:
-            map_learn[current_y][current_x] = 0
-        map_movement[current_y][current_x] = map_movement[current_y][current_x] - COST_OF_SINGLE_MOVE
+        map_movement[current_y_pooled][current_x_pooled] = map_movement[current_y_pooled][current_x_pooled] - COST_OF_SINGLE_MOVE
 
         # map_learn_distributed = scipy.ndimage.filters.gaussian_filter(map_learn, sigma=30)
-        map_learn_distributed = map_learn
 
-        new_x, new_y = find_next_move(map_learn_distributed, map_obstacles, map_movement, current_x, current_y)
+        new_x, new_y = find_next_move(map_movement, current_x_pooled, current_y_pooled)
 
-        current_x = new_x
-        current_y = new_y
+        current_x_pooled = new_x
+        current_y_pooled = new_y
         print('step ' + str(step_number))
         print('moved to (' + str(current_x) + '|' + str(current_y) + ')')
         step_number = step_number + 1
 
-    return current_x, current_y
+    target_position = find_free_field_in_subarray(current_x_pooled, current_y_pooled, map_obstacles)
+
+    return target_position
 
 
-def find_next_move(map_learn_distributed, map_obstacles, map_movement, current_x, current_y):
-    distributed_map = map_learn_distributed + map_obstacles + map_movement
-    max_neighbour = get_max_neighbour(current_y, current_x, distributed_map)
+def find_free_field_in_subarray(current_x, current_y, map_obstacles):
+    for x in range(current_x*POOLING_FACTOR, (current_x + 1) * POOLING_FACTOR):
+        for y in range(current_y*POOLING_FACTOR, (current_y + 1) * POOLING_FACTOR):
+            if map_obstacles[x, y] == 0:
+                return (x, y)
+
+    return None
+
+
+def find_next_move(map_movement, current_x, current_y):
+    max_neighbour = get_max_neighbour(current_y, current_x, map_movement)
 
     print('found max neighbour at ' + str(max_neighbour))
 
