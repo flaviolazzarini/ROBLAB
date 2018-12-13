@@ -46,6 +46,14 @@ class ALAzureFaceDetection():
         self.subscribe()
 
     def detectIdentifyAndReturnNameIfPersonKnown(self, threshold):
+        # type: (float) -> str
+        """
+        Uses the Microsoft AZURE Face API to detect a Person in the FOV of the Robot and checkes if
+        the Person is already known in the Face Database.
+
+        :param threshold: Minimal confidence required to decide if person is known
+        :return: PersistedFaceID as str. None if Person is not known or is no person was detected
+        """
         wrapper = self.getPictureFromCamera3()
         faceDetectResult = CF.face.detect(wrapper)
 
@@ -69,6 +77,13 @@ class ALAzureFaceDetection():
 
 
     def detectIfFaceIDIsInSight(self, persistedFaceID):
+        """
+        Takes a Picture and checks if the given persisted PersonID is in the FOV of the Robot
+
+        :param persistedFaceID: The AZURE persistedFaceID to detect
+        :return: bool if face was detected
+        """
+        # type: (object) -> object
 
         wrapper = self.getPictureFromCamera3()
         faceDetectResults = CF.face.detect(wrapper)
@@ -91,6 +106,15 @@ class ALAzureFaceDetection():
 
 
     def learnFace(self, threshold, displayName):
+        """
+        Takes a picture from the Camera and detects faces in FOV of Pepper. If the person is already know to the AZURE Face API
+        the picture is added to the associated face. If the person is unknown, a new persistedUserID is created.
+
+        :param threshold: Minimal confidence required to decide if person is already known
+        :param displayName:
+        :return: persistedFaceID of the detected Person
+        """
+        # type: (float, str) -> str
 
         wrapper = self.getPictureFromCamera3()
         faceDetectResults = CF.face.detect(wrapper)
@@ -130,6 +154,13 @@ class ALAzureFaceDetection():
             return None
 
     def identifyPerson(self, faceDetectResult):
+        """
+        Identifies the Person and returns a persistedFaceIDContainer if the person is known to the AZURE Service
+
+        :param faceDetectResult:
+        :return: Container with the results from AZURE
+        """
+
 
         logging.info("Create new empty faceID list")
         faceIDs = []
@@ -150,6 +181,11 @@ class ALAzureFaceDetection():
 
 
     def getPictureFromCamera(self):
+        """
+        Gets a Picture from a mjpeg camera source
+
+        :return: Wrapper which implements a .read() Method to be able to pass the picture infos to AZURE without saveing it local
+        """
         stream = urlopen('http://192.168.1.110:8080/video/mjpeg')
         byt = bytes()
         exit = False
@@ -166,12 +202,21 @@ class ALAzureFaceDetection():
         return wrapper
 
     def getPictureFromCamera2(self):
+        """
+        Gets picture from Pepper Camera by saving it on the robot
+
+        :return: path to the localy safed image
+        """
         self.camera.takePicture(self.path, self.fileName)
         return str(self.path + self.fileName)
 
     def getPictureFromCamera3(self):
+        """
+        Gets picture from Pepper Camera without saving it to a file
 
 
+        :return: Wrapper which implements a .read() Method to be able to pass the picture infos to AZURE without saveing it local
+        """
         # Get Image from Pepper
         naoImage = self.video_service.getImageRemote(self.video_client)
 
