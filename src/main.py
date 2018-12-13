@@ -1,8 +1,13 @@
-import naoqi_proxy_python_classes
 from configuration import PepperConfiguration
 from pynaoqi_mate import Robot
+import logging
+
+from HideNSeek import HideNSeek
 
 if __name__ == '__main__':
-    config = PepperConfiguration("Porter")
-    #config = PepperConfiguration("", "localhost", 55830)
+    logging.getLogger().setLevel(logging.INFO)
+    config = PepperConfiguration("Amber")
+    #config = PepperConfiguration("", "localhost", 53101)
     robot = Robot(config)
+    hideNseek = HideNSeek(robot)
+    hideNseek.run()

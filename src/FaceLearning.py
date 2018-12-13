@@ -1,78 +1,59 @@
+import concurrent
+from time import sleep
 
 import qi
-from time import sleep
-import concurrent.futures
 
 
-class FaceRecognition(object):
-
+class FaceLearning(object):
     def __init__(self, robot):
         """
         Initialisation of qi framework and event detection.
         """
         # Get the service ALMemory.
         self.session = robot.session
-        #self._app.session.registerService("FaceRec", FaceRecognition())
+        self._app = robot.app
         self.memory = self.session.service("ALMemory")
         self.subscriber = None
+        self._success = None
         self.face_detection = None
-        self._knownFace = None
         self._name = None
-        self._person_seen = False
+        self._face_learned = False
         self._subscribed = False
 
-    def search_face_blocking(self, timeout=None):
-        return self.__search_face_logic()
-        # future = self.search_face_concurrently()
+    def learn_face_blocking(self, name, timeout=None):
+        # future = self.learn_face_concurrently(name)
         # return future.wait()
+        return self.__learn_face_logic(name)
 
-    def __search_face_logic(self):
+    def __learn_face_logic(self, name):
         try:
+            self._name = name
             self.subscribe()
-            print("search_face_logic")
-            while not self._person_seen:
+            self.face_detection.forgetPerson(self._name)
+            while not self._face_learned:
                 sleep(0.1)
-            self._person_seen = False
         except Exception, e:
             print "Error: ", e
 
         return self.__get_result_and_reset()
 
     def __get_result_and_reset(self):
-
-        return self._knownFace, self._name
+        return self._success
 
     def on_human_tracked(self, value):
         """
         Callback for event FaceDetected.
         """
+        print "Callback"
         # Unsubscribe from to prevent multiple triggers
         self.unsubscribe()
 
         if value != []:  # empty value when the face disappears
+            self._success = self.face_detection.learnFace(self._name)
 
-            # Second Field = array of face_Info's.
-            faceInfoArray = value[1]
-
-            for j in range(len(faceInfoArray) - 1):
-                faceInfo = faceInfoArray[j]
-
-                # First Field = Shape info.
-                faceShapeInfo = faceInfo[0]
-
-                # Second Field = Extra info (empty for now).
-                faceExtraInfo = faceInfo[1]
-
-                if faceExtraInfo[2] == "":
-                    self._knownFace = False
-
-                else:
-                    self._knownFace = True
-                    self._name = faceExtraInfo[2]
-            self._person_seen = True
         else:
-            if not self._subscribed:
-                self.subscribe()
+            self.subscribe()
+        self._face_learned = True
 
     def subscribe(self):
         if not self._subscribed:
@@ -82,7 +63,7 @@ class FaceRecognition(object):
             self.face_detection.setRecognitionConfidenceThreshold(0.3)
             self.face_detection.subscribe("FaceRecognition")
             self._subscribed = True
-            print("subscribe face_rec")
+            print("subscribe learn")
             sleep(0.1)
 
     def unsubscribe(self):
@@ -90,4 +71,4 @@ class FaceRecognition(object):
             self.subscriber = None
             self.face_detection.unsubscribe("FaceRecognition")
             self._subscribed = False
-            print("unsubscribe face_rec")
+            print("unsubscribe learn")
