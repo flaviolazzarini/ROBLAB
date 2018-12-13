@@ -1,15 +1,17 @@
 import math
 import random
 from itertools import product
+from time import sleep
 
 import numpy as np
 import sys
+import logging
 
 import qi
 
 COST_OF_SINGLE_MOVE = 10
 
-POOLING_FACTOR = 20
+POOLING_FACTOR = 5
 
 IS_FINISHED = False
 
@@ -19,16 +21,16 @@ def start_exploration_search(exploration, radius):
         exploration.explore(radius)
 
 
-def start_random_search(exploration):
+def start_random_search(exploration, motion):
     while not IS_FINISHED:
         random_x = random.uniform(2, 3) * random.choice((-1, 1))
         random_y = random.uniform(2, 3) * random.choice((-1, 1))
 
         target = [random_x, random_y, 0.]
-        print('move to ' + str(target))
-        print('currently at ' + str(exploration.get_current_position()))
+        logging.info('move to ' + str(target))
+        logging.info('currently at ' + str(exploration.get_current_position()))
+        sleep(3)
         exploration.navigate_to(random_x, random_y, 0)
-
 
 def start_search(exploration, map_exploration):
     # map = exploration_map.get_current_map()  # 0 = obstacle / 50 = not explored / 100 = free
@@ -36,7 +38,7 @@ def start_search(exploration, map_exploration):
     map_movement = np.zeros_like(map_obstacles)
 
     movement_future = None
-    exploration.relocate_in_map([0, 0])
+    exploration.relocate_in_map([0, 0, 0])
 
     while not IS_FINISHED:
         position = exploration.get_current_position_in_map_array()
@@ -71,9 +73,10 @@ def start_search(exploration, map_exploration):
         if movement_future is not None:
             movement_future.wait()
 
-        print('movement offset x=' + str(x_diff) + ' y=' + str(y_diff) + ' theta=' + str(target_angle))
-        print('')
-
+        logging.info('movement offset x=' + str(x_diff) + ' y=' + str(y_diff) + ' theta=' + str(target_angle))
+        logging.info('')
+        sleep(1)
+        print "Sleep"
         movement_future = qi.async(exploration.navigate_to,
                                    math.fabs(x_diff * meters_per_pixel),
                                    math.fabs(y_diff * meters_per_pixel),
@@ -97,8 +100,8 @@ def do_multiple_virtual_moves(current_x, current_y, map_movement, map_obstacles,
 
         current_x_pooled = new_x
         current_y_pooled = new_y
-        print('step ' + str(step_number))
-        print('moved to (' + str(current_x) + '|' + str(current_y) + ')')
+        logging.info('step ' + str(step_number))
+        logging.info('moved to (' + str(current_x) + '|' + str(current_y) + ')')
         step_number = step_number + 1
 
     target_position = find_free_field_in_subarray(current_x_pooled, current_y_pooled, map_obstacles)
@@ -118,7 +121,7 @@ def find_free_field_in_subarray(current_x, current_y, map_obstacles):
 def find_next_move(map_movement, current_x, current_y):
     max_neighbour = get_max_neighbour(current_y, current_x, map_movement)
 
-    print('found max neighbour at ' + str(max_neighbour))
+    logging.info('found max neighbour at ' + str(max_neighbour))
 
     new_x = max_neighbour[1]
     new_y = max_neighbour[0]

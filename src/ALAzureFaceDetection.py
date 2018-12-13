@@ -1,4 +1,3 @@
-import io
 
 from PIL import Image
 from io import BytesIO
@@ -37,12 +36,36 @@ class ALAzureFaceDetection():
         # Initialize Naoqi Camera Service
         self.path = "/home/nao/hs18_hideandseek/"
         self.fileName ="temp.jpg"
-        self.camera.setResolution(3)
-        self.camera.setColorSpace(9)
+        self.camera.setResolution(4)
+        self.camera.setColorSpace(11)
 
         # Initialize Logging
-        logging.getLogger().setLevel(logging.WARNING)
+        logging.getLogger().setLevel(logging.INFO)
         logging.info('ALAzureFaceDetection initialized')
+
+        self.subscribe()
+
+    def detectIdentifyAndReturnNameIfPersonKnown(self, threshold):
+        wrapper = self.getPictureFromCamera3()
+        faceDetectResult = CF.face.detect(wrapper)
+
+        if len(faceDetectResult) == 0:
+            logging.warning("No Face detected")
+            return None
+        else:
+            faceIdentifyResult = self.identifyPerson(faceDetectResult)
+            if len(faceIdentifyResult[0]['candidates']) == 0:
+                logging.info("No valid candidate was detected")
+                return None
+            elif faceIdentifyResult[0]['candidates'][0]['confidence'] < float(threshold):
+                logging.info("Face was identified but confidence was below set threshold")
+                return None
+            else:
+                persistedPersonID = str(faceIdentifyResult[0]['candidates'][0]['personId'])
+                personInfo = CF.person.get(self.personGroupID, persistedPersonID)
+                return personInfo['name']
+
+
 
 
     def detectIfFaceIDIsInSight(self, persistedFaceID):
@@ -121,13 +144,13 @@ class ALAzureFaceDetection():
         else:
             logging.info("Send FaceId to Azure Face Service to identify Persons")
 
-            result = CF.face.identify(faceIDs, self.personGroupID, )
+            result = CF.face.identify(faceIDs, self.personGroupID)
 
         return result
 
 
     def getPictureFromCamera(self):
-        stream = urlopen('http://192.168.1.227:8080/video/mjpeg')
+        stream = urlopen('http://192.168.1.110:8080/video/mjpeg')
         byt = bytes()
         exit = False
         while not exit:
@@ -147,15 +170,10 @@ class ALAzureFaceDetection():
         return str(self.path + self.fileName)
 
     def getPictureFromCamera3(self):
-        video_client = self.video_service.subscribeCamera(self._serviceID,
-                                                          0,
-                                                          3,
-                                                          11,
-                                                          10
-                                                          )
+
 
         # Get Image from Pepper
-        naoImage = self.video_service.getImageRemote(video_client)
+        naoImage = self.video_service.getImageRemote(self.video_client)
 
         #Extract Image Information
         imageWidth = naoImage[0]
@@ -165,13 +183,24 @@ class ALAzureFaceDetection():
         # Create Image from Immage Information
         image = Image.frombytes("RGB", (imageWidth, imageHeight), image_string)
 
-        self.video_service.unsubscribe(video_client)
 
-        with io.BytesIO() as output:
+
+        with BytesIO() as output:
             image.save(output, format="JPEG")
             wrapper = azureImageWraper(output.getvalue())
 
         return wrapper
+
+    def subscribe(self):
+        self.video_client = self.video_service.subscribeCamera(self._serviceID,
+                                                          0,
+                                                          3,
+                                                          11,
+                                                          10
+                                                          )
+
+    def unregister(self):
+        self.video_service.unsubscribe(self.video_client)
 
     def __createFileLikeFromImageData__(self):
         pass

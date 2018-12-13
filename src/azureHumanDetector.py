@@ -54,7 +54,7 @@ class AzureHumanDetector():
         return False
 
     def getPictureFromCamera(self):
-        stream = urlopen('http://192.168.1.227:8080/video/mjpeg')
+        stream = urlopen('http://192.168.1.110:8080/video/mjpeg')
         byt = bytes()
         exit = False
         while not exit:

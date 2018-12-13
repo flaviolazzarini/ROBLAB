@@ -1,5 +1,6 @@
 import numpy
 import array as arr
+import logging
 
 from MapHelper import array_to_bw_bitmap
 
@@ -12,11 +13,11 @@ class Exploration:
     def explore(self, radius):
         error_code = self.navigation.explore(radius)
         if error_code != 0:
-            print "Exploration failed."
+            logging.info("Exploration failed.")
             return
 
         path = self.navigation.saveExploration()
-        print "Exploration saved at path: \"" + path + "\""
+        logging.info("Exploration saved at path: \"" + path + "\"")
 
         self.navigation.startLocalization()
         self.move_to_origin()
@@ -24,13 +25,14 @@ class Exploration:
 
     def move_to_in_map(self, position):
         errorcode = self.navigation.navigateToInMap(position)
+        logging.info("could not navigate to position " + position)
         if(errorcode != 0):
-            print("could not navigate to position " + position)
+            pass
 
     def navigate_to(self, x, y, theta):
-        successfull = self.navigation.navigateTo(x, y, theta)
+        successfull = self.navigation.navigateToInMap([x, y, 0])
         if successfull == False:
-            print("could not navigate to position (" + str(x) + " / " + str(y) + ")")
+            logging.info("could not navigate to position (" + str(x) + " / " + str(y) + ")")
 
     def move_to_origin(self):
         self.move_to_in_map([0., 0., 0.])
